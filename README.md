@@ -28,16 +28,16 @@ For a list of commands run: `java -jar byoc-tool.jar --help`
 
 For a list of ingestion parameters run: `java -jar byoc-tool.jar ingest --help`
 
-Give the tool the BYOC collection id `<MyCollectionId>` you wish to import to and the path to the folder containing imagery (lets say `/folder` for these examples):
+Give the tool the BYOC collection id `<MyCollectionId>` you wish to import to and the path to the folder containing imagery:
 
-The basic import command (see the next chapter for details) is thus: `java -jar byoc-tool.jar --env-file env.txt ingest <MyCollectionId> /folder`
+The basic import command (see the next chapter for details) is thus: `java -jar byoc-tool.jar ingest <MyCollectionId> <MyFolder>`
 
 ## The Simple Default Case
 
 The tool offers parameters which will allow tuning for various folder/file structures. The default case, which needs no additional parameters is as follows:
 By default, the tool takes the input folder and looks for folders inside which have tiff or jp2 images. In this case, each such folder found represents a tile and each file represents a band. For example, if you have files at the following locations:
 
-- folder/
+- <MyFolder>/
   - tile_1/
     - B01.tif
     - B02.tif
@@ -47,7 +47,7 @@ By default, the tool takes the input folder and looks for folders inside which h
 
 with `folder/` as the input path, the tool would ingest 2 tiles with names `tile_1` and `tile_2`, and each tile would have two bands named `B01` and `B02`. By default, band names equal the file names without file extensions.
 
-The command will prepare Cloud Optimized GeoTIFFs and upload them to S3 bucket associated with the BYOC collection. Finally, it will register tiles in your BYOC collection. The file `/folder/tile_1/B01.tiff` will be uploaded to`s3://<MyBucket>/tile_1/B01.tiff`.
+The command will prepare Cloud Optimized GeoTIFFs and upload them to S3 bucket associated with the BYOC collection. Finally, it will register tiles in your BYOC collection. The file `<MyFolder>/tile_1/B01.tiff` will be uploaded to`s3://<MyBucket>/tile_1/B01.tiff`.
 
 For more elaborate folder, tile, band structures, see the help of the `--file-pattern` and `--file-map` parameters.
 
