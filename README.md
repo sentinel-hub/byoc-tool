@@ -1,6 +1,6 @@
 # Utility tool for Sentinel Hub BYOC service
 
-The Sentinel Hub BYOC Tool is a utility tool available as a Docker image (in this case) and a Java jar, which can be used to prepare your data for use in Sentinel Hub.
+The Sentinel Hub BYOC Tool is a utility tool available as a [Docker image](https://hub.docker.com/r/sentinelhub/byoc-tool) and a [Java jar](https://github.com/sentinel-hub/byoc-tool/releases), which can be used to prepare your data for use in Sentinel Hub.
 
 It converts your TIFF and JP2 files to Cloud Optimized GeoTIFFs, uploads them to AWS S3 and registers them in the Sentinel Hub BYOC service. When complete, your data should be visible in Sentinel Hub. The same steps can be done manually and are detailed in our documentation https://docs.sentinel-hub.com/api/latest/#/API/byoc, should you prefer or require more control over the process.
 
@@ -96,6 +96,12 @@ To enable geometry tracing set the flag `--trace-coverage`. See `--distance-tole
 
 To speed up tracing, you can trace coverage from one of image overviews. For example, to trace coverage from the first overview, set the flag `--trace-image-idx 1`.
 
+## Building a jar
+
+Run `./gradlew shadowJar`
+
+The jar will be located in the folder `build/libs`
+
 ## Building a docker image
 
 ```
@@ -109,6 +115,6 @@ Download OpenJDK 14.
 
 Create system variables `JPACKAGE_HOME` and `JLINK_HOME` that point to OpenJDK 14 location.
 
-Run `gradlew jpackage`
+Run `./gradlew jpackage`
 
 The executable will be located in the project root.
