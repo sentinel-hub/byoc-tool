@@ -107,7 +107,7 @@ docker build -t byoc-tool .
 
 Download OpenJDK 14.
 
-Set JPACKAGE_HOME and JLINK_HOME to OpenJDK 14 location.
+Create system variables `JPACKAGE_HOME` and `JLINK_HOME` that point to OpenJDK 14 location.
 
 Run `gradlew jpackage`
 
