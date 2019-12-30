@@ -1,0 +1,117 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.diffplug.gradle.spotless' version '3.26.0'
+    id 'idea'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    mavenCentral()
+}
+
+spotless {
+    java {
+        googleJavaFormat('1.7')
+    }
+}
+
+idea {
+    module {
+        outputDir file('build/classes/main')
+        testOutputDir file('build/classes/test')
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+//    removes '-all' suffix from .jar file
+    classifier = ''
+}
+
+ext {
+    jerseyVersion = '2.26'
+    lombokVersion = '1.18.8'
+    log4jVersion = '2.12.1'
+    junitVersion = '5.5.2'
+}
+
+dependencies {
+
+    implementation "info.picocli:picocli:4.0.4"
+    implementation "org.locationtech.jts:jts-core:1.16.1"
+    implementation "com.amazonaws:aws-java-sdk-s3:1.11.490"
+    implementation "com.twelvemonkeys.imageio:imageio-tiff:3.4.2"
+    implementation "org.wololo:jts2geojson:0.14.3"
+    implementation "de.grundid.opendatalab:geojson-jackson:1.12"
+    implementation "commons-cli:commons-cli:1.4"
+
+    implementation "org.glassfish.jersey.core:jersey-client:$jerseyVersion"
+    implementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
+    implementation "org.glassfish.jersey.media:jersey-media-json-jackson:$jerseyVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.10.1"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.1"
+
+    // lombok
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+    // logging
+    implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+
+    // required with newer JDKs
+    implementation 'javax.activation:activation:1.1'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.0'
+
+    // testing
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+}
+
+application {
+    mainClassName = "byoc.ByocTool"
+}
+
+// creates a slim JDK runtime for distribution
+task createRuntime(type: Exec) {
+    doFirst() {
+        project.delete("${buildDir}/runtime")
+    }
+    String runtimePath = "${buildDir}/runtime"
+
+    workingDir project.projectDir
+    commandLine = [
+            "${System.getenv("JLINK_HOME")}/bin/jlink",
+            '--add-modules', 'java.base,java.desktop,jdk.unsupported,java.management,java.scripting,java.logging,java.sql,java.naming',
+            '--strip-debug',
+            '--no-header-files',
+            '--no-man-pages',
+            "--compress=2",
+            '--output', runtimePath
+    ]
+}
+
+// creates application bundle (executable + runtime)
+task jpackage(type: Exec, dependsOn: shadowJar) {
+    dependsOn createRuntime
+    workingDir project.projectDir
+    commandLine = [
+            "${System.getenv("JPACKAGE_HOME")}/bin/jpackage",
+            '--input', "${buildDir}/libs",
+            '--name', project.name,
+            '--main-class', project.mainClassName,
+            '--main-jar', "byoc-tool.jar",
+            '--runtime-image', "${buildDir}/runtime",
+            '--java-options', '-Dlog4j2.disable.jmx=true'
+    ]
+}
