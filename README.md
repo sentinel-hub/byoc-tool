@@ -37,7 +37,7 @@ The basic import command (see the next chapter for details) is thus: `java -jar 
 The tool offers parameters which will allow tuning for various folder/file structures. The default case, which needs no additional parameters is as follows:
 By default, the tool takes the input folder and looks for folders inside which have tiff or jp2 images. In this case, each such folder found represents a tile and each file represents a band. For example, if you have files at the following locations:
 
-- <MyFolder>/
+- `<MyFolder>`/
   - tile_1/
     - B01.tif
     - B02.tif
