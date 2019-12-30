@@ -24,7 +24,7 @@ public class SetCoverageCmd implements Runnable {
   @Parameters(index = "1", description = "Tile id")
   private String tileId;
 
-  @Option(names = "--file", description = "Local file to use instead of a file in S3")
+  @Option(names = "--file", description = "Optionally set the path to a local file corresponding to the input tile which will be used for coverage tracing. If omitted, the file will be accessed via S3.")
   private String file;
 
   @Mixin private CoverageCalcParams coverageCalcParams;
