@@ -31,19 +31,17 @@ AWS_ACCESS_KEY_ID=<MyAwsAccessKeyId>
 AWS_SECRET_ACCESS_KEY=<MyAwsSecretAccessKey>
 ```
 
-and pass it to Docker: `docker run --env-file env.txt sentinelhub/byoc-tool <Arguments...>`
+and pass it to java: `java -jar byoc-tool.jar --env-file env.txt <Arguments...>`
 
 ## Basic Commands
 
-For a list of commands run: `docker run sentinelhub/byoc-tool --help`
+For a list of commands run: `java -jar byoc-tool.jar --help`
 
-For a list of ingestion parameters run: `docker run sentinelhub/byoc-tool ingest --help`
+For a list of ingestion parameters run: `java -jar byoc-tool.jar ingest --help`
 
-To ingest files, you need to mount the imagery folder inside Docker, for example: `-v <MyFolder>:/folder` to mount the folder `<MyFolder>` to `/folder` inside Docker.
+Give the tool the BYOC collection id `<MyCollectionId>` you wish to import to and the path to the folder containing imagery (lets say `/folder` for these examples):
 
-Then you give the tool the BYOC collection id `<MyCollectionId>` you wish to import to and the path to the folder inside the Docker (in this case `/folder`):
-
-The basic import command (see the next chapter for details) is thus: `docker run --env-file env.txt -v <MyFolder>:/folder sentinelhub/byoc-tool ingest <MyCollectionId> /folder`
+The basic import command (see the next chapter for details) is thus: `java -jar byoc-tool.jar --env-file env.txt ingest <MyCollectionId> /folder`
 
 
 ## The Simple Default Case
@@ -101,13 +99,6 @@ To speed up tracing, you can trace coverage from one of image overviews. For exa
 Run `./gradlew shadowJar`
 
 The jar will be located in the folder `build/libs`
-
-## Building a docker image
-
-```
-./gradlew build
-docker build -t byoc-tool .
-```
 
 ## Building an executable
 
