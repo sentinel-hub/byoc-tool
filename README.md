@@ -20,18 +20,7 @@ It converts your TIFF and JP2 files to Cloud Optimized GeoTIFFs, uploads them to
 
 Provide the Sentinel Hub OAuth client id and client secret in the environment variables `SH_CLIENT_ID` and `SH_CLIENT_SECRET`.
 
-Provide the AWS client credentials in the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` or by mounting the folder `~/.aws/credentials`.
-
-You can bundle all variables in a text file, e.g. named env.txt:
-
-```
-SH_CLIENT_ID=<MySentinelHubClientId>
-SH_CLIENT_SECRET=<MySentinelHubClientSecret>
-AWS_ACCESS_KEY_ID=<MyAwsAccessKeyId>
-AWS_SECRET_ACCESS_KEY=<MyAwsSecretAccessKey>
-```
-
-and pass it to java: `java -jar byoc-tool.jar --env-file env.txt <Arguments...>`
+The AWS client credentials will be read from `~/.aws/credentials`, if present. If not, or you wish to override them, set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the values required.
 
 ## Basic Commands
 
@@ -42,7 +31,6 @@ For a list of ingestion parameters run: `java -jar byoc-tool.jar ingest --help`
 Give the tool the BYOC collection id `<MyCollectionId>` you wish to import to and the path to the folder containing imagery (lets say `/folder` for these examples):
 
 The basic import command (see the next chapter for details) is thus: `java -jar byoc-tool.jar --env-file env.txt ingest <MyCollectionId> /folder`
-
 
 ## The Simple Default Case
 
