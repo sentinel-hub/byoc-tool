@@ -126,7 +126,8 @@ public class IngestCmd implements Runnable {
       }
 
       if (!Files.isDirectory(processingFolder)) {
-        System.err.println(String.format("Processing folder %s is not a folder!", processingFolder));
+        System.err.println(
+            String.format("Processing folder %s is not a folder!", processingFolder));
         return;
       }
     }
