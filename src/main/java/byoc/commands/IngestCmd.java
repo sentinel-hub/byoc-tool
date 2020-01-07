@@ -93,7 +93,7 @@ public class IngestCmd implements Runnable {
 
   public void run() {
     if (!Files.exists(folder)) {
-      System.err.println(String.format("Folder %s does not exist!", processingFolder));
+      System.err.println(String.format("Folder %s does not exist!", folder));
       return;
     }
 
