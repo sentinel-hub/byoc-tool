@@ -119,14 +119,16 @@ public class IngestCmd implements Runnable {
       return;
     }
 
-    if (!Files.exists(processingFolder)) {
-      System.err.println(String.format("Processing folder %s does not exist!", processingFolder));
-      return;
-    }
+    if (processingFolder != null) {
+      if (!Files.exists(processingFolder)) {
+        System.err.println(String.format("Processing folder %s does not exist!", processingFolder));
+        return;
+      }
 
-    if (!Files.isDirectory(processingFolder)) {
-      System.err.println(String.format("Processing folder %s is not a folder!", processingFolder));
-      return;
+      if (!Files.isDirectory(processingFolder)) {
+        System.err.println(String.format("Processing folder %s is not a folder!", processingFolder));
+        return;
+      }
     }
 
     CogFactory cogFactory = new CogFactory(noDataValue, !noCompressionPredictor, processingFolder);
