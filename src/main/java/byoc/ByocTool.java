@@ -24,7 +24,7 @@ import picocli.CommandLine.*;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "v0.1";
+  public static final String VERSION = "v0.1.1";
 
   private ByocService byocService;
 
