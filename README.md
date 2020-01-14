@@ -4,6 +4,8 @@ The Sentinel Hub BYOC Tool is a utility tool available as a [Docker image](https
 
 It converts your TIFF and JP2 files to Cloud Optimized GeoTIFFs, uploads them to AWS S3 and registers them in the Sentinel Hub BYOC service. When complete, your data should be visible in Sentinel Hub. The same steps can be done manually and are detailed in our [documentation](https://docs.sentinel-hub.com/api/latest/#/API/byoc), should you prefer or require more control over the process.
 
+This readme is targeted towards the Java jar version.
+
 ## Prerequisites
 
 - A Sentinel Hub OAuth client -- if you don't have one, create one using our [web application](https://apps.sentinel-hub.com/dashboard). Click [here](https://docs.sentinel-hub.com/api/latest/#/API/authentication) for instructions.
@@ -13,6 +15,8 @@ It converts your TIFF and JP2 files to Cloud Optimized GeoTIFFs, uploads them to
 - The AWS credentials with access to your bucket -- Get them from the AWS console. These are only used to upload your data and read data that is registered in BYOC service.
 
 - Your bucket configured so that Sentinel Hub can access data from it -- how to do this is documented [here](https://docs.sentinel-hub.com/api/latest/#/API/byoc?id=configuring-the-bucket). This is necessary because this tool and Sentinel Hub are separate.
+
+- GDAL (https://gdal.org/) installed, at least v2.3.0. Additionally, the `GDAL` and `GDAL_DATA` system environment variables must be set. 
 
 - Imagery! (Of course)
 
