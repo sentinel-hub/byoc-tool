@@ -4,11 +4,17 @@ plugins {
     id 'com.diffplug.gradle.spotless' version '3.26.0'
     id 'idea'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'maven-publish'
 }
+
+group = 'com.sinergise.sentinel'
+version = '0.2.0'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+    withJavadocJar()
+    withSourcesJar()
 }
 
 repositories {
@@ -115,3 +121,20 @@ task jpackage(type: Exec, dependsOn: shadowJar) {
             '--java-options', '-Dlog4j2.disable.jmx=true'
     ]
 }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+        }
+    }
+}
+
