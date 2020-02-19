@@ -23,7 +23,7 @@ import picocli.CommandLine.*;
     sortOptions = false)
 public class IngestCmd implements Runnable {
 
-  static final String DEFAULT_FILE_PATTERN =
+  private static final String DEFAULT_FILE_PATTERN =
       "(.*[\\/|\\\\])*(?<tile>.*)[\\/|\\\\].*\\.(?i)(tif|tiff|jp2)";
 
   @Parameters(index = "0", description = "Collection id")
