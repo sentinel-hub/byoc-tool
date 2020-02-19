@@ -109,7 +109,7 @@ public class ByocTool implements Runnable {
     cmd.setExecutionExceptionHandler(
         (e, commandLine, parseResult) -> {
           log.error("Error occurred with message \"{}\"", e.getMessage(), e);
-          return 0;
+          return 1;
         });
 
     if (args.length == 0) {
