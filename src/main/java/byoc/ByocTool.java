@@ -5,12 +5,13 @@ import byoc.commands.ListTilesCmd;
 import byoc.commands.SetCoverageCmd;
 import byoc.sentinelhub.AuthService;
 import byoc.sentinelhub.ByocService;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine;
 import picocli.CommandLine.*;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 @Command(
     name = "byoc-tool",
@@ -24,7 +25,7 @@ import picocli.CommandLine.*;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "v0.1.1";
+  public static final String VERSION = "v0.2.0";
 
   private ByocService byocService;
 
@@ -90,13 +91,13 @@ public class ByocTool implements Runnable {
     return new AuthService(clientId, clientSecret);
   }
 
-  private AmazonS3ClientBuilder getS3ClientBuilder() {
-    AmazonS3ClientBuilder s3ClientBuilder = AmazonS3ClientBuilder.standard();
+  private S3ClientBuilder getS3ClientBuilder() {
+    S3ClientBuilder s3ClientBuilder = S3Client.builder();
 
     if (awsCredentials != null) {
-      s3ClientBuilder.withCredentials(
-          new AWSStaticCredentialsProvider(
-              new BasicAWSCredentials(awsCredentials.accessKey, awsCredentials.secretKey)));
+      s3ClientBuilder.credentialsProvider(
+          StaticCredentialsProvider.create(
+              AwsBasicCredentials.create(awsCredentials.accessKey, awsCredentials.secretKey)));
     }
 
     return s3ClientBuilder;

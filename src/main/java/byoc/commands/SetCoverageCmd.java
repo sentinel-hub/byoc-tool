@@ -5,14 +5,14 @@ import byoc.coverage.CoverageCalculator;
 import byoc.sentinelhub.ByocService;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 @Command(name = "set-coverage", description = "Set tile coverage.")
 @Log4j2
@@ -52,8 +52,8 @@ public class SetCoverageCmd implements Runnable {
         coverageCalculator.addImage(Paths.get(file));
       } else {
         ByocCollection collection = byocService.getCollection(collectionId);
-        AmazonS3 s3Service = byocService.getS3ClientForCollection(collectionId);
-        processTileBands(collection, tile, s3Service, coverageCalculator);
+        S3Client s3 = byocService.getS3ClientForCollection(collectionId);
+        processTileBands(collection, tile, s3, coverageCalculator);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -72,16 +72,14 @@ public class SetCoverageCmd implements Runnable {
   }
 
   private void processTileBands(
-      ByocCollection collection,
-      ByocTile tile,
-      AmazonS3 s3Service,
-      CoverageCalculator coverageCalculator)
+      ByocCollection collection, ByocTile tile, S3Client s3, CoverageCalculator coverageCalculator)
       throws IOException {
     for (String band : collection.bandNames()) {
       String bandPath = tile.bandPath(band);
-      GetObjectRequest objectRequest = new GetObjectRequest(collection.getS3Bucket(), bandPath);
+      GetObjectRequest request =
+          GetObjectRequest.builder().bucket(collection.getS3Bucket()).key(bandPath).build();
 
-      try (S3ObjectInputStream is = s3Service.getObject(objectRequest).getObjectContent()) {
+      try (InputStream is = s3.getObject(request)) {
         coverageCalculator.addImage(is);
       }
     }

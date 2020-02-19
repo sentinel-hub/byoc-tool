@@ -3,9 +3,6 @@ package byoc.sentinelhub;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
 import byoc.sentinelhub.models.SHResponse;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +19,9 @@ import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 public class ByocService {
 
@@ -38,9 +38,9 @@ public class ByocService {
 
   private final WebTarget webTarget;
   private final Client httpClient;
-  private final AmazonS3ClientBuilder s3ClientBuilder;
+  private final S3ClientBuilder s3ClientBuilder;
 
-  public ByocService(AuthService authService, AmazonS3ClientBuilder s3ClientBuilder) {
+  public ByocService(AuthService authService, S3ClientBuilder s3ClientBuilder) {
     ObjectMapper objectMapper = newObjectMapper();
 
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
@@ -83,7 +83,7 @@ public class ByocService {
     return response.readEntity(new GenericType<SHResponse<ByocCollection>>() {}).getData();
   }
 
-  public Regions getCollectionS3Region(String collectionId) {
+  public Region getCollectionS3Region(String collectionId) {
     Response response = webTarget.path("global").queryParam("ids", collectionId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
@@ -99,8 +99,8 @@ public class ByocService {
     return getS3Region(location);
   }
 
-  public AmazonS3 getS3ClientForCollection(String collectionId) {
-    return s3ClientBuilder.withRegion(getCollectionS3Region(collectionId)).build();
+  public S3Client getS3ClientForCollection(String collectionId) {
+    return s3ClientBuilder.region(getCollectionS3Region(collectionId)).build();
   }
 
   public ByocTile getTile(String collectionId, String tileId) {
@@ -160,15 +160,15 @@ public class ByocService {
     return collectionTarget(collectionId).path("tiles");
   }
 
-  private Regions getS3Region(String location) {
-    Regions region;
+  private Region getS3Region(String location) {
+    Region region;
     switch (location) {
       case "aws-eu-central-1":
       case "sgs-hq":
-        region = Regions.EU_CENTRAL_1;
+        region = Region.EU_CENTRAL_1;
         break;
       case "aws-us-west-2":
-        region = Regions.US_EAST_2;
+        region = Region.US_EAST_2;
         break;
       default:
         throw new RuntimeException("Unexpected location " + location);
