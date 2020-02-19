@@ -11,6 +11,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
@@ -48,7 +50,10 @@ public class ByocClient {
 
     ClientConfig clientConfig = new ClientConfig();
     clientConfig.register(jsonProvider);
-    clientConfig.register(new AuthorizationFilter(authClient));
+
+    clientConfig.register((ClientRequestFilter) requestContext ->
+        requestContext.getHeaders().add("Authorization", "Bearer " + authClient.accessToken()));
+
     clientConfig.register(new UserAgentFilter());
 
     this.httpClient = ClientBuilder.newClient(clientConfig);
