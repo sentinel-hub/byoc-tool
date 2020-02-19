@@ -1,5 +1,6 @@
 package byoc.sentinelhub;
 
+import byoc.ByocTool;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
 import byoc.sentinelhub.models.SHResponse;
@@ -16,6 +17,7 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.ClientConfig;
@@ -31,6 +33,8 @@ public class ByocClient {
 
   private static final String DEFAULT_BYOC_SERVICE_BASE_URL =
       "https://services.sentinel-hub.com/byoc";
+
+  private static final String USER_AGENT = "byoc-tool/v" + ByocTool.VERSION;
 
   static {
     BYOC_SERVICE_BASE_URL =
@@ -54,7 +58,8 @@ public class ByocClient {
     clientConfig.register((ClientRequestFilter) requestContext ->
         requestContext.getHeaders().add("Authorization", "Bearer " + authClient.accessToken()));
 
-    clientConfig.register(new UserAgentFilter());
+    clientConfig.register((ClientRequestFilter) requestContext ->
+        requestContext.getHeaders().add(HttpHeaders.USER_AGENT, USER_AGENT));
 
     this.httpClient = ClientBuilder.newClient(clientConfig);
     this.webTarget = httpClient.target(BYOC_SERVICE_BASE_URL);
