@@ -17,7 +17,7 @@ public class ListTilesCmd implements Runnable {
 
   @Override
   public void run() {
-    Iterator<ByocTile> iter = parent.getByocService().getTileIterator(collectionId);
+    Iterator<ByocTile> iter = parent.newByocClient().getTileIterator(collectionId);
     while (iter.hasNext()) {
       ByocTile tile = iter.next();
 

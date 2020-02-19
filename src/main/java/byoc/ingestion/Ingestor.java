@@ -7,7 +7,7 @@ import byoc.coverage.CoverageCalculator;
 import byoc.ingestion.TileSearch.BandSource;
 import byoc.ingestion.TileSearch.FileSource;
 import byoc.ingestion.TileSearch.Tile;
-import byoc.sentinelhub.ByocService;
+import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocTile;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,7 +31,7 @@ public class Ingestor {
 
   private static final int COVERAGE_MAXIMUM_POINTS = 100;
 
-  private final ByocService byocService;
+  private final ByocClient byocClient;
   private final ExecutorService executorService;
   private final CogFactory cogFactory;
   private final String collectionId;
@@ -42,14 +42,14 @@ public class Ingestor {
   private CoverageCalcParams coverageCalcParams;
 
   public Ingestor(
-      String collectionId, ByocService byocService, int nThreads, CogFactory cogFactory) {
-    this.byocService = byocService;
+      String collectionId, ByocClient byocClient, int nThreads, CogFactory cogFactory) {
+    this.byocClient = byocClient;
     this.executorService = Executors.newFixedThreadPool(nThreads);
     this.cogFactory = cogFactory;
     this.collectionId = collectionId;
-    this.s3Bucket = byocService.getCollection(collectionId).getS3Bucket();
-    this.existingTilePaths = byocService.getAllTilePaths(collectionId);
-    this.s3Uploader = new S3Uploader(byocService.getS3ClientForCollection(collectionId));
+    this.s3Bucket = byocClient.getCollection(collectionId).getS3Bucket();
+    this.existingTilePaths = byocClient.getAllTilePaths(collectionId);
+    this.s3Uploader = new S3Uploader(byocClient.getS3ClientForCollection(collectionId));
   }
 
   public void setCoverageCalcParams(CoverageCalcParams coverageCalcParams) {
@@ -169,7 +169,7 @@ public class Ingestor {
     log.info("Creating tile {}", tile.path());
 
     try {
-      byocService.createTile(collectionId, byocTile);
+      byocClient.createTile(collectionId, byocTile);
     } catch (RuntimeException e) {
       System.err.println(e.getMessage());
     }

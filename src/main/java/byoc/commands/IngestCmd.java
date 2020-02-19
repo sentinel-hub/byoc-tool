@@ -133,7 +133,7 @@ public class IngestCmd implements Runnable {
     }
 
     CogFactory cogFactory = new CogFactory(noDataValue, !noCompressionPredictor, processingFolder);
-    Ingestor ingestor = new Ingestor(collectionId, parent.getByocService(), nThreads, cogFactory);
+    Ingestor ingestor = new Ingestor(collectionId, parent.newByocClient(), nThreads, cogFactory);
     if (coverageCalcParams != null) {
       ingestor.setCoverageCalcParams(coverageCalcParams);
     }

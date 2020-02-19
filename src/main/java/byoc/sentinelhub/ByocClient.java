@@ -23,7 +23,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
-public class ByocService {
+public class ByocClient {
 
   private static final String BYOC_SERVICE_BASE_URL;
 
@@ -40,7 +40,7 @@ public class ByocService {
   private final Client httpClient;
   private final S3ClientBuilder s3ClientBuilder;
 
-  public ByocService(AuthService authService, S3ClientBuilder s3ClientBuilder) {
+  public ByocClient(AuthClient authClient, S3ClientBuilder s3ClientBuilder) {
     ObjectMapper objectMapper = newObjectMapper();
 
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
@@ -48,7 +48,7 @@ public class ByocService {
 
     ClientConfig clientConfig = new ClientConfig();
     clientConfig.register(jsonProvider);
-    clientConfig.register(new AuthorizationFilter(authService));
+    clientConfig.register(new AuthorizationFilter(authClient));
     clientConfig.register(new UserAgentFilter());
 
     this.httpClient = ClientBuilder.newClient(clientConfig);

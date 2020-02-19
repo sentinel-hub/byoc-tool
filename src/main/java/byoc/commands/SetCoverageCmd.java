@@ -2,7 +2,7 @@ package byoc.commands;
 
 import byoc.ByocTool;
 import byoc.coverage.CoverageCalculator;
-import byoc.sentinelhub.ByocService;
+import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
 import java.io.IOException;
@@ -41,8 +41,8 @@ public class SetCoverageCmd implements Runnable {
 
   @Override
   public void run() {
-    ByocService byocService = parent.getByocService();
-    ByocTile tile = byocService.getTile(collectionId, tileId);
+    ByocClient byocClient = parent.newByocClient();
+    ByocTile tile = byocClient.getTile(collectionId, tileId);
     log.info("Processing tile {}", tile.idWithPath());
 
     CoverageCalculator coverageCalculator = new CoverageCalculator(coverageCalcParams);
@@ -51,8 +51,8 @@ public class SetCoverageCmd implements Runnable {
       if (file != null) {
         coverageCalculator.addImage(Paths.get(file));
       } else {
-        ByocCollection collection = byocService.getCollection(collectionId);
-        S3Client s3 = byocService.getS3ClientForCollection(collectionId);
+        ByocCollection collection = byocClient.getCollection(collectionId);
+        S3Client s3 = byocClient.getS3ClientForCollection(collectionId);
         processTileBands(collection, tile, s3, coverageCalculator);
       }
     } catch (IOException e) {
@@ -68,7 +68,7 @@ public class SetCoverageCmd implements Runnable {
     }
 
     tile.setCoverGeometry(coverage);
-    byocService.updateTile(collectionId, tile);
+    byocClient.updateTile(collectionId, tile);
   }
 
   private void processTileBands(

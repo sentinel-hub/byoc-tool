@@ -20,7 +20,7 @@ import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonP
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 
 @Log4j2
-public class AuthService {
+public class AuthClient {
 
   private static final String AUTH_SERVICE_BASE_URL;
 
@@ -39,7 +39,7 @@ public class AuthService {
   private String accessToken;
   private Instant expiresIn;
 
-  public AuthService(String clientId, String clientSecret) {
+  public AuthClient(String clientId, String clientSecret) {
     Objects.requireNonNull(clientId, "client id missing");
     Objects.requireNonNull(clientSecret, "client secret missing");
 

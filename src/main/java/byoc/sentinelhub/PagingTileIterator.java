@@ -9,24 +9,24 @@ import javax.ws.rs.core.Response;
 
 class PagingTileIterator implements Iterator<ByocTile> {
 
-  private final ByocService byocService;
+  private final ByocClient byocClient;
   private final String collectionId;
 
   private List<ByocTile> tiles;
   private URI nextUri;
 
-  PagingTileIterator(ByocService byocService, String collectionId) {
-    this.byocService = byocService;
+  PagingTileIterator(ByocClient byocClient, String collectionId) {
+    this.byocClient = byocClient;
     this.collectionId = collectionId;
     fetchPage(getFirstPageUri());
   }
 
   private URI getFirstPageUri() {
-    return byocService.getWebTarget().path("collections").path(collectionId).path("tiles").getUri();
+    return byocClient.getWebTarget().path("collections").path(collectionId).path("tiles").getUri();
   }
 
   private void fetchPage(URI uri) {
-    Response response = byocService.getHttpClient().target(uri).request().get();
+    Response response = byocClient.getHttpClient().target(uri).request().get();
     ByocTilesPage page = response.readEntity(ByocTilesPage.class);
     tiles = page.getData();
     nextUri = page.getLinks().getNext();

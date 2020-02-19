@@ -7,12 +7,12 @@ import java.util.List;
 
 class TileIterator implements Iterator<ByocTile> {
 
-  private final ByocService byocService;
+  private final ByocClient byocClient;
   private final String collectionId;
   private final List<String> tileIds;
 
-  TileIterator(ByocService byocService, String collectionId, List<String> tileIds) {
-    this.byocService = byocService;
+  TileIterator(ByocClient byocClient, String collectionId, List<String> tileIds) {
+    this.byocClient = byocClient;
     this.collectionId = collectionId;
     this.tileIds = new LinkedList<>(tileIds);
   }
@@ -28,6 +28,6 @@ class TileIterator implements Iterator<ByocTile> {
   }
 
   private ByocTile fetchTile(String tileId) {
-    return byocService.getTile(collectionId, tileId);
+    return byocClient.getTile(collectionId, tileId);
   }
 }

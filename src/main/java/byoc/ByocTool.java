@@ -3,8 +3,8 @@ package byoc;
 import byoc.commands.IngestCmd;
 import byoc.commands.ListTilesCmd;
 import byoc.commands.SetCoverageCmd;
-import byoc.sentinelhub.AuthService;
-import byoc.sentinelhub.ByocService;
+import byoc.sentinelhub.AuthClient;
+import byoc.sentinelhub.ByocClient;
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine;
 import picocli.CommandLine.*;
@@ -27,12 +27,12 @@ public class ByocTool implements Runnable {
 
   public static final String VERSION = "v0.2.0";
 
-  private ByocService byocService;
+  private ByocClient byocClient;
 
   @ArgGroup(exclusive = false)
-  private AuthClientCredentials clientCredentials;
+  private AuthCredentials authCredentials;
 
-  private static class AuthClientCredentials {
+  private static class AuthCredentials {
     @Option(
         names = {"--auth-client-id"},
         description =
@@ -68,27 +68,27 @@ public class ByocTool implements Runnable {
   @Override
   public void run() {}
 
-  public ByocService getByocService() {
-    if (byocService == null) {
-      byocService = new ByocService(getAuthService(), getS3ClientBuilder());
+  public ByocClient newByocClient() {
+    if (byocClient == null) {
+      byocClient = new ByocClient(newAuthClient(), getS3ClientBuilder());
     }
 
-    return byocService;
+    return byocClient;
   }
 
-  private AuthService getAuthService() {
+  private AuthClient newAuthClient() {
     final String clientId;
     final String clientSecret;
 
-    if (clientCredentials != null) {
-      clientId = clientCredentials.clientId;
-      clientSecret = clientCredentials.clientSecret;
+    if (authCredentials != null) {
+      clientId = authCredentials.clientId;
+      clientSecret = authCredentials.clientSecret;
     } else {
       clientId = System.getenv("SH_CLIENT_ID");
       clientSecret = System.getenv("SH_CLIENT_SECRET");
     }
 
-    return new AuthService(clientId, clientSecret);
+    return new AuthClient(clientId, clientSecret);
   }
 
   private S3ClientBuilder getS3ClientBuilder() {
