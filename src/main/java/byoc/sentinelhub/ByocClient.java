@@ -56,7 +56,7 @@ public class ByocClient {
     this.s3ClientBuilder = s3ClientBuilder;
   }
 
-  static ObjectMapper newObjectMapper() {
+  private static ObjectMapper newObjectMapper() {
     ObjectMapper objectMapper;
     objectMapper = new ObjectMapper();
     objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
