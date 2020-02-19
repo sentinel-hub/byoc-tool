@@ -100,10 +100,10 @@ public class IngestCmd implements Runnable {
     if (serializedFileMaps == null) {
       serializedFileMaps = Collections.singleton("\\.(?i)(tif|tiff|jp2)$");
     }
+    Collection<FileMap> fileMaps = FileMapsDeserialization.deserialize(serializedFileMaps);
 
     Collection<Tile> tiles;
     try {
-      Collection<FileMap> fileMaps = FileMapsDeserialization.deserialize(serializedFileMaps);
       tiles = TileSearch.search(folder, Pattern.compile(filePattern), fileMaps);
     } catch (IOException e) {
       throw new RuntimeException(e);
