@@ -70,7 +70,7 @@ public class ByocTool implements Runnable {
 
   public ByocClient newByocClient() {
     if (byocClient == null) {
-      byocClient = new ByocClient(newAuthClient(), getS3ClientBuilder());
+      byocClient = new ByocClient(newAuthClient(), newS3ClientBuilder());
     }
 
     return byocClient;
@@ -91,7 +91,7 @@ public class ByocTool implements Runnable {
     return new AuthClient(clientId, clientSecret);
   }
 
-  private S3ClientBuilder getS3ClientBuilder() {
+  private S3ClientBuilder newS3ClientBuilder() {
     S3ClientBuilder s3ClientBuilder = S3Client.builder();
 
     if (awsCredentials != null) {
