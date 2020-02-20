@@ -12,7 +12,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -138,6 +137,19 @@ public class ByocClient {
     }
 
     return tilePaths;
+  }
+
+  public UUID createCollection(String name, String s3Bucket) {
+    ByocCollection collection = new ByocCollection();
+    collection.setName(name);
+    collection.setS3Bucket(s3Bucket);
+    Response response = webTarget.path("collections").request()
+        .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
+
+    ResponseUtils.ensureStatus(response, 201);
+
+    SHResponse<ByocCollection> entity = response.readEntity(new GenericType<SHResponse<ByocCollection>>() {});
+    return UUID.fromString(entity.getData().getId());
   }
 
   public void createTile(String collectionId, ByocTile tile) {

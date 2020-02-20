@@ -11,6 +11,9 @@ public class ByocCollection implements NoJsonAutoDetect {
   @JsonProperty("id")
   private String id;
 
+  @JsonProperty("name")
+  private String name;
+
   @JsonProperty("s3Bucket")
   private String s3Bucket;
 
