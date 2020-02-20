@@ -45,6 +45,10 @@ public class ByocClient {
   private final Client httpClient;
   private final S3ClientBuilder s3ClientBuilder;
 
+  public ByocClient() {
+    this(new AuthClient(), S3Client.builder());
+  }
+
   public ByocClient(AuthClient authClient, S3ClientBuilder s3ClientBuilder) {
     ObjectMapper objectMapper = newObjectMapper();
 
