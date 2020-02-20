@@ -77,18 +77,11 @@ public class ByocTool implements Runnable {
   }
 
   private AuthClient newAuthClient() {
-    final String clientId;
-    final String clientSecret;
-
     if (authCredentials != null) {
-      clientId = authCredentials.clientId;
-      clientSecret = authCredentials.clientSecret;
+      return new AuthClient(authCredentials.clientId, authCredentials.clientSecret);
     } else {
-      clientId = System.getenv("SH_CLIENT_ID");
-      clientSecret = System.getenv("SH_CLIENT_SECRET");
+      return new AuthClient();
     }
-
-    return new AuthClient(clientId, clientSecret);
   }
 
   private S3ClientBuilder newS3ClientBuilder() {

@@ -39,6 +39,10 @@ public class AuthClient {
   private String accessToken;
   private Instant expiresIn;
 
+  public AuthClient() {
+    this(System.getenv("SH_CLIENT_ID"), System.getenv("SH_CLIENT_SECRET"));
+  }
+
   public AuthClient(String clientId, String clientSecret) {
     Objects.requireNonNull(clientId, "client id missing");
     Objects.requireNonNull(clientSecret, "client secret missing");
