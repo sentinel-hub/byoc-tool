@@ -2,7 +2,7 @@ package byoc.ingestion;
 
 import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
 
-import byoc.commands.CoverageCalcParams;
+import byoc.cli.CoverageCalcParams;
 import byoc.coverage.CoverageCalculator;
 import byoc.ingestion.TileSearch.BandSource;
 import byoc.ingestion.TileSearch.FileSource;

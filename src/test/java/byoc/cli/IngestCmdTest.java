@@ -1,4 +1,4 @@
-package byoc.commands;
+package byoc.cli;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

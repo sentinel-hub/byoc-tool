@@ -1,6 +1,6 @@
 package byoc.coverage;
 
-import byoc.commands.CoverageCalcParams;
+import byoc.cli.CoverageCalcParams;
 import byoc.tiff.TiffCompoundDirectory;
 import byoc.tiff.TiffDirectory.Scale;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;

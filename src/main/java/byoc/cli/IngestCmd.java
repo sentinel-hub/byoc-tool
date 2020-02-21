@@ -1,4 +1,4 @@
-package byoc.commands;
+package byoc.cli;
 
 import static byoc.tiff.TiffDirectory.TAG_GDAL_NO_DATA_VALUE;
 
@@ -75,7 +75,7 @@ public class IngestCmd implements Runnable {
   @ArgGroup(exclusive = false)
   private CoverageCalcParams coverageCalcParams;
 
-  private static class CoverageCalcParams extends byoc.commands.CoverageCalcParams {
+  private static class CoverageCalcParams extends byoc.cli.CoverageCalcParams {
 
     @Option(
         names = {"--trace-coverage"},

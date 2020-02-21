@@ -1,8 +1,8 @@
 package byoc;
 
-import byoc.commands.IngestCmd;
-import byoc.commands.ListTilesCmd;
-import byoc.commands.SetCoverageCmd;
+import byoc.cli.IngestCmd;
+import byoc.cli.ListTilesCmd;
+import byoc.cli.SetCoverageCmd;
 import byoc.sentinelhub.AuthClient;
 import byoc.sentinelhub.ByocClient;
 import lombok.extern.log4j.Log4j2;

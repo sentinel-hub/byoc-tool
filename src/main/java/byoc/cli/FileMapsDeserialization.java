@@ -1,4 +1,4 @@
-package byoc.commands;
+package byoc.cli;
 
 import byoc.ingestion.TileSearch.BandSource;
 import byoc.ingestion.TileSearch.FileMap;

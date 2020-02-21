@@ -1,4 +1,4 @@
-package byoc.commands;
+package byoc.cli;
 
 import byoc.ByocTool;
 import byoc.sentinelhub.models.ByocTile;

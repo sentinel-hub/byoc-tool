@@ -1,4 +1,4 @@
-package byoc.commands;
+package byoc.cli;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
