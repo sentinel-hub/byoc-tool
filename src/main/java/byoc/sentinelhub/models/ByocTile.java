@@ -1,7 +1,7 @@
 package byoc.sentinelhub.models;
 
 import byoc.sentinelhub.Constants;
-import byoc.utils.WktToGeoJson;
+import byoc.utils.JtsUtils;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -55,7 +55,7 @@ public class ByocTile implements Common.NoJsonAutoDetect {
   }
 
   public void setCoverGeometry(Geometry coverage) {
-    setCoverGeometry(WktToGeoJson.convert(coverage));
+    setCoverGeometry(JtsUtils.toGeoJson(coverage));
   }
 
   private void setCoverGeometry(GeoJsonObject coverage) {

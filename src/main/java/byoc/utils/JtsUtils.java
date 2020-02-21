@@ -7,26 +7,23 @@ import org.geojson.GeoJsonObject;
 import org.locationtech.jts.geom.Geometry;
 import org.wololo.jts2geojson.GeoJSONWriter;
 
-public class WktToGeoJson {
+public class JtsUtils {
 
   private static final GeoJSONWriter GEO_JSON_WRITER = new GeoJSONWriter();
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  public static GeoJsonObject convert(Geometry geometry) {
+  public static GeoJsonObject toGeoJson(Geometry geometry) {
     try {
       String geoJsonString = GEO_JSON_WRITER.write(geometry).toString();
       GeoJsonObject geoJson = OBJECT_MAPPER.readValue(geoJsonString, GeoJsonObject.class);
-      setCrs(geoJson, geometry.getSRID());
+
+      Crs crs = new Crs();
+      crs.getProperties().put("name", "urn:ogc:def:crs:EPSG::" + geometry.getSRID());
+      geoJson.setCrs(crs);
 
       return geoJson;
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static void setCrs(GeoJsonObject geoJson, Integer epsgCode) {
-    Crs crs = new Crs();
-    crs.getProperties().put("name", "urn:ogc:def:crs:EPSG::" + epsgCode);
-    geoJson.setCrs(crs);
   }
 }
