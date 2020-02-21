@@ -9,12 +9,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.geojson.GeoJsonObject;
 import org.locationtech.jts.geom.Geometry;
 
-@Data
-public class ByocTile implements NoJsonAutoDetect {
+@Getter
+@Setter
+public class ByocTile implements Common.NoJsonAutoDetect {
 
   @JsonProperty("id")
   private String id;

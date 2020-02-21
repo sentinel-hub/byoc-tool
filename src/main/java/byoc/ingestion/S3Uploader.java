@@ -31,5 +31,7 @@ class S3Uploader implements AutoCloseable {
   }
 
   @Override
-  public void close() {}
+  public void close() {
+    s3.close();
+  }
 }

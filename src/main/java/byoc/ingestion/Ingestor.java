@@ -8,6 +8,7 @@ import byoc.ingestion.TileSearch.BandSource;
 import byoc.ingestion.TileSearch.FileSource;
 import byoc.ingestion.TileSearch.Tile;
 import byoc.sentinelhub.ByocClient;
+import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,45 +25,44 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 @Log4j2
+@Setter
+@Accessors(chain = true)
 public class Ingestor {
 
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
 
   private final ByocClient byocClient;
-  private final ExecutorService executorService;
-  private final CogFactory cogFactory;
-  private final String collectionId;
-  private final String s3Bucket;
-  private final Set<String> existingTilePaths;
-  private final S3Uploader s3Uploader;
 
+  private CogFactory cogFactory = new CogFactory();
+  private ExecutorService executorService = Executors.newWorkStealingPool();
+  private S3ClientBuilder s3ClientBuilder = S3Client.builder();
   private CoverageCalcParams coverageCalcParams;
 
-  public Ingestor(
-      String collectionId, ByocClient byocClient, int nThreads, CogFactory cogFactory) {
+  public Ingestor(ByocClient byocClient) {
     this.byocClient = byocClient;
-    this.executorService = Executors.newFixedThreadPool(nThreads);
-    this.cogFactory = cogFactory;
-    this.collectionId = collectionId;
-    this.s3Bucket = byocClient.getCollection(collectionId).getS3Bucket();
-    this.existingTilePaths = byocClient.getAllTilePaths(collectionId);
-    this.s3Uploader = new S3Uploader(byocClient.getS3ClientForCollection(collectionId));
   }
 
-  public void setCoverageCalcParams(CoverageCalcParams coverageCalcParams) {
-    this.coverageCalcParams = coverageCalcParams;
-  }
-
-  public void ingest(Collection<Tile> tiles) {
+  public void ingest(String collectionId, Collection<Tile> tiles) {
     List<Future<Void>> futures = new ArrayList<>();
 
+    Set<String> existingTiles = byocClient.getAllTilePaths(collectionId);
+    ByocCollection collection = byocClient.getCollection(collectionId);
+    Region s3Region = byocClient.getCollectionS3Region(collectionId);
+
+    S3Client s3 = s3ClientBuilder.region(s3Region).build();
+    S3Uploader s3Uploader = new S3Uploader(s3);
+
     for (Tile tile : tiles) {
-      if (doesTileExist(tile)) {
+      if (doesTileExist(existingTiles, tile)) {
         System.out.println(String.format("Skipping tile \"%s\" because it exists", tile.path()));
         continue;
       }
@@ -70,7 +70,7 @@ public class Ingestor {
       futures.add(
           executorService.submit(
               () -> {
-                ingestTile(tile);
+                ingestTile(collection, tile, s3Uploader);
 
                 return null;
               }));
@@ -94,16 +94,16 @@ public class Ingestor {
     s3Uploader.close();
   }
 
-  private boolean doesTileExist(Tile tile) {
+  private boolean doesTileExist(Set<String> existingTiles, Tile tile) {
     Optional<String> optional =
         Stream.of(tile.path(), String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER))
-            .filter(existingTilePaths::contains)
+            .filter(existingTiles::contains)
             .findFirst();
 
     return optional.isPresent();
   }
 
-  private void ingestTile(Tile tile) throws IOException {
+  private void ingestTile(ByocCollection collection, Tile tile, S3Uploader s3Uploader) throws IOException {
     Collection<String> errors = TileValidation.validate(getTiffFiles(tile));
 
     if (!errors.isEmpty()) {
@@ -149,7 +149,7 @@ public class Ingestor {
       String s3Key = String.format("%s/%s.tiff", tile.path(), bandSource.name());
       log.info(
           "Uploading image {} at index {} to s3 {}", fileSource.path(), bandSource.index(), s3Key);
-      s3Uploader.uploadWithRetry(s3Bucket, s3Key, cogPath);
+      s3Uploader.uploadWithRetry(collection.getS3Bucket(), s3Key, cogPath);
     }
 
     ByocTile byocTile = new ByocTile();
@@ -163,7 +163,7 @@ public class Ingestor {
     log.info("Creating tile {}", tile.path());
 
     try {
-      byocClient.createTile(collectionId, byocTile);
+      byocClient.createTile(collection.getId(), byocTile);
     } catch (RuntimeException e) {
       System.err.println(e.getMessage());
     }

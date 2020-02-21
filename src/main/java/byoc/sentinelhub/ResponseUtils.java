@@ -1,14 +1,13 @@
 package byoc.sentinelhub;
 
-import byoc.sentinelhub.models.SHResponse;
+import byoc.sentinelhub.models.Common.Response;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
 
 class ResponseUtils {
 
-  static void ensureStatus(Response response, int status) {
+  static void ensureStatus(javax.ws.rs.core.Response response, int status) {
     if (response.getStatus() != status) {
-      SHResponse shResponse = response.readEntity(new GenericType<SHResponse>() {});
+      Response shResponse = response.readEntity(new GenericType<Response>() {});
       throw new RuntimeException(shResponse.getError().getMessage());
     }
   }

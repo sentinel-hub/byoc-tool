@@ -3,13 +3,20 @@ package byoc.sentinelhub;
 import byoc.ByocTool;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
-import byoc.sentinelhub.models.SHResponse;
+import byoc.sentinelhub.models.Common.Response;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -18,13 +25,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 public class ByocClient {
 
@@ -43,13 +47,12 @@ public class ByocClient {
 
   private final WebTarget webTarget;
   private final Client httpClient;
-  private final S3ClientBuilder s3ClientBuilder;
 
   public ByocClient() {
-    this(new AuthClient(), S3Client.builder());
+    this(new AuthClient());
   }
 
-  public ByocClient(AuthClient authClient, S3ClientBuilder s3ClientBuilder) {
+  public ByocClient(AuthClient authClient) {
     ObjectMapper objectMapper = newObjectMapper();
 
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
@@ -66,7 +69,6 @@ public class ByocClient {
 
     this.httpClient = ClientBuilder.newClient(clientConfig);
     this.webTarget = httpClient.target(BYOC_SERVICE_BASE_URL);
-    this.s3ClientBuilder = s3ClientBuilder;
   }
 
   private static ObjectMapper newObjectMapper() {
@@ -89,39 +91,35 @@ public class ByocClient {
   }
 
   public ByocCollection getCollection(String collectionId) {
-    Response response = webTarget.path("collections").path(collectionId).request().get();
+    javax.ws.rs.core.Response response = webTarget.path("collections").path(collectionId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
 
-    return response.readEntity(new GenericType<SHResponse<ByocCollection>>() {}).getData();
+    return response.readEntity(new GenericType<Response<ByocCollection>>() {}).getData();
   }
 
   public Region getCollectionS3Region(String collectionId) {
-    Response response = webTarget.path("global").queryParam("ids", collectionId).request().get();
+    javax.ws.rs.core.Response response = webTarget.path("global").queryParam("ids", collectionId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
 
     String location =
         (String)
             response
-                .readEntity(new GenericType<SHResponse<List<Map<String, Object>>>>() {})
+                .readEntity(new GenericType<Response<List<Map<String, Object>>>>() {})
                 .getData()
                 .get(0)
                 .get("location");
 
-    return getS3Region(location);
-  }
-
-  public S3Client getS3ClientForCollection(String collectionId) {
-    return s3ClientBuilder.region(getCollectionS3Region(collectionId)).build();
+    return toS3Region(location);
   }
 
   public ByocTile getTile(String collectionId, String tileId) {
-    Response response = tileTarget(collectionId, tileId).request().get();
+    javax.ws.rs.core.Response response = tileTarget(collectionId, tileId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
 
-    return response.readEntity(new GenericType<SHResponse<ByocTile>>() {}).getData();
+    return response.readEntity(new GenericType<Response<ByocTile>>() {}).getData();
   }
 
   public Iterator<ByocTile> getTileIterator(String collectionId) {
@@ -147,17 +145,17 @@ public class ByocClient {
     ByocCollection collection = new ByocCollection();
     collection.setName(name);
     collection.setS3Bucket(s3Bucket);
-    Response response = webTarget.path("collections").request()
+    javax.ws.rs.core.Response response = webTarget.path("collections").request()
         .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
 
     ResponseUtils.ensureStatus(response, 201);
 
-    SHResponse<ByocCollection> entity = response.readEntity(new GenericType<SHResponse<ByocCollection>>() {});
+    Response<ByocCollection> entity = response.readEntity(new GenericType<Response<ByocCollection>>() {});
     return UUID.fromString(entity.getData().getId());
   }
 
   public void createTile(String collectionId, ByocTile tile) {
-    Response response =
+    javax.ws.rs.core.Response response =
         tilesTarget(collectionId)
             .request()
             .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));
@@ -166,7 +164,7 @@ public class ByocClient {
   }
 
   public void updateTile(String collectionId, ByocTile tile) {
-    Response response =
+    javax.ws.rs.core.Response response =
         tileTarget(collectionId, tile.getId())
             .request()
             .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));
@@ -186,7 +184,7 @@ public class ByocClient {
     return collectionTarget(collectionId).path("tiles");
   }
 
-  private Region getS3Region(String location) {
+  private Region toS3Region(String location) {
     Region region;
     switch (location) {
       case "aws-eu-central-1":

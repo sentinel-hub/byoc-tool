@@ -52,7 +52,7 @@ public class SetCoverageCmd implements Runnable {
         coverageCalculator.addImage(Paths.get(file));
       } else {
         ByocCollection collection = byocClient.getCollection(collectionId);
-        S3Client s3 = byocClient.getS3ClientForCollection(collectionId);
+        S3Client s3 = parent.newS3Client(byocClient.getCollectionS3Region(collectionId));
         processTileBands(collection, tile, s3, coverageCalculator);
       }
     } catch (IOException e) {
@@ -74,7 +74,7 @@ public class SetCoverageCmd implements Runnable {
   private void processTileBands(
       ByocCollection collection, ByocTile tile, S3Client s3, CoverageCalculator coverageCalculator)
       throws IOException {
-    for (String band : collection.bandNames()) {
+    for (String band : collection.getBands()) {
       String bandPath = tile.bandPath(band);
       GetObjectRequest request =
           GetObjectRequest.builder().bucket(collection.getS3Bucket()).key(bandPath).build();

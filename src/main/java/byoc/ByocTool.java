@@ -10,6 +10,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.*;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
@@ -70,7 +71,7 @@ public class ByocTool implements Runnable {
 
   public ByocClient newByocClient() {
     if (byocClient == null) {
-      byocClient = new ByocClient(newAuthClient(), newS3ClientBuilder());
+      byocClient = new ByocClient(newAuthClient());
     }
 
     return byocClient;
@@ -84,7 +85,7 @@ public class ByocTool implements Runnable {
     }
   }
 
-  private S3ClientBuilder newS3ClientBuilder() {
+  public S3Client newS3Client(Region region) {
     S3ClientBuilder s3ClientBuilder = S3Client.builder();
 
     if (awsCredentials != null) {
@@ -93,7 +94,7 @@ public class ByocTool implements Runnable {
               AwsBasicCredentials.create(awsCredentials.accessKey, awsCredentials.secretKey)));
     }
 
-    return s3ClientBuilder;
+    return s3ClientBuilder.region(region).build();
   }
 
   public static void main(String... args) {

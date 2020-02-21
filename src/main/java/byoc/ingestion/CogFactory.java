@@ -4,7 +4,11 @@ import byoc.ingestion.TileSearch.BandSource;
 import byoc.ingestion.TileSearch.Tile;
 import byoc.tiff.TiffCompoundDirectory;
 import byoc.tiff.TiffDirectory.SampleFormat;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,18 +17,17 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import lombok.Data;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
+@Setter
+@Accessors(chain = true)
 public class CogFactory {
 
-  private final Integer noDataValue;
-  private final boolean useCompressionPredictor;
-  private final Path processingFolder;
-
-  public CogFactory(Integer noDataValue, boolean useCompressionPredictor, Path processingFolder) {
-    this.noDataValue = noDataValue;
-    this.useCompressionPredictor = useCompressionPredictor;
-    this.processingFolder = processingFolder;
-  }
+  private Integer noDataValue;
+  private Boolean useCompressionPredictor = true;
+  private Path processingFolder;
 
   Path createCog(Tile tile, Path inputFile, BandSource bandSource) throws IOException {
     Path intermediateFile = getIntermediateFile(tile, inputFile);
@@ -154,7 +157,7 @@ public class CogFactory {
     runCommand(command.toArray(new String[0]));
   }
 
-  static Integer getPredictor(int sampleFormat) {
+  private static Integer getPredictor(int sampleFormat) {
     final Integer predictor;
     if (sampleFormat == SampleFormat.UINT || sampleFormat == SampleFormat.INT) {
       predictor = 2;

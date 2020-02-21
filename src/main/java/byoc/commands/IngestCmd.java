@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import picocli.CommandLine.*;
 
@@ -132,13 +133,18 @@ public class IngestCmd implements Runnable {
       }
     }
 
-    CogFactory cogFactory = new CogFactory(noDataValue, !noCompressionPredictor, processingFolder);
-    Ingestor ingestor = new Ingestor(collectionId, parent.newByocClient(), nThreads, cogFactory);
+    Ingestor ingestor = new Ingestor(parent.newByocClient())
+      .setCogFactory(new CogFactory()
+          .setNoDataValue(noDataValue)
+          .setUseCompressionPredictor(!noCompressionPredictor)
+          .setProcessingFolder(processingFolder))
+      .setExecutorService(Executors.newFixedThreadPool(nThreads));
+
     if (coverageCalcParams != null) {
       ingestor.setCoverageCalcParams(coverageCalcParams);
     }
 
-    ingestor.ingest(tiles);
+    ingestor.ingest(collectionId, tiles);
   }
 
   private void printTiles(Collection<Tile> tiles) {
