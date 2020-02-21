@@ -13,7 +13,8 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.Response;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
@@ -86,7 +87,8 @@ public class AuthClient {
     return response.readEntity(TokenResponse.class);
   }
 
-  @Data
+  @Getter
+  @Setter
   private static class TokenResponse {
 
     @JsonProperty("access_token")
