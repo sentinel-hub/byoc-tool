@@ -7,7 +7,7 @@ import byoc.ingestion.CogFactory;
 import byoc.ingestion.ByocIngestor;
 import byoc.ingestion.TileSearch;
 import byoc.ingestion.TileSearch.FileMap;
-import byoc.ingestion.TileSearch.Tile;
+import byoc.ingestion.ByocIngestor.Tile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

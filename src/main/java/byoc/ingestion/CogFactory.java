@@ -1,7 +1,7 @@
 package byoc.ingestion;
 
-import byoc.ingestion.TileSearch.BandSource;
-import byoc.ingestion.TileSearch.Tile;
+import byoc.ingestion.ByocIngestor.BandSource;
+import byoc.ingestion.ByocIngestor.Tile;
 import byoc.tiff.TiffCompoundDirectory;
 import byoc.tiff.TiffDirectory.SampleFormat;
 import java.io.BufferedReader;
@@ -17,7 +17,6 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
-import lombok.Data;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 

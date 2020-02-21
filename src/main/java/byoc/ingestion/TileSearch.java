@@ -1,5 +1,8 @@
 package byoc.ingestion;
 
+import byoc.ingestion.ByocIngestor.BandSource;
+import byoc.ingestion.ByocIngestor.FileSource;
+import byoc.ingestion.ByocIngestor.Tile;
 import byoc.ingestion.FileFinder.Match;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -97,30 +100,5 @@ public class TileSearch {
 
     private final Pattern filePattern;
     private final List<BandSource> bands;
-  }
-
-  @Value
-  @Accessors(fluent = true)
-  public static class Tile {
-
-    private final String path;
-    private final LocalDateTime sensingTime;
-    private final List<FileSource> fileSources;
-  }
-
-  @Value
-  @Accessors(fluent = true)
-  static class FileSource {
-
-    private final Path path;
-    private final List<BandSource> bandSources;
-  }
-
-  @Value
-  @Accessors(fluent = true)
-  public static class BandSource {
-
-    private final int index;
-    private final String name;
   }
 }

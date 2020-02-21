@@ -1,6 +1,6 @@
 package byoc.cli;
 
-import byoc.ingestion.TileSearch.BandSource;
+import byoc.ingestion.ByocIngestor.BandSource;
 import byoc.ingestion.TileSearch.FileMap;
 import java.util.*;
 import java.util.regex.Pattern;

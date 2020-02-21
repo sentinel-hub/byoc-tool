@@ -4,14 +4,12 @@ import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
 
 import byoc.cli.CoverageCalcParams;
 import byoc.coverage.CoverageCalculator;
-import byoc.ingestion.TileSearch.BandSource;
-import byoc.ingestion.TileSearch.FileSource;
-import byoc.ingestion.TileSearch.Tile;
 import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -185,6 +183,31 @@ public class ByocIngestor {
   private void printTileError(Tile tile, String message) {
     System.err.println(
         String.format("Failed to ingest tile with path \"%s\". Reason: %s", tile.path(), message));
+  }
+
+  @Value
+  @Accessors(fluent = true)
+  public static class Tile {
+
+    private final String path;
+    private final LocalDateTime sensingTime;
+    private final List<FileSource> fileSources;
+  }
+
+  @Value
+  @Accessors(fluent = true)
+  static class FileSource {
+
+    private final Path path;
+    private final List<BandSource> bandSources;
+  }
+
+  @Value
+  @Accessors(fluent = true)
+  public static class BandSource {
+
+    private final int index;
+    private final String name;
   }
 
   @Value
