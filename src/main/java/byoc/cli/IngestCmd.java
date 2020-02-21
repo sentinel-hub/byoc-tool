@@ -4,7 +4,7 @@ import static byoc.tiff.TiffDirectory.TAG_GDAL_NO_DATA_VALUE;
 
 import byoc.ByocTool;
 import byoc.ingestion.CogFactory;
-import byoc.ingestion.Ingestor;
+import byoc.ingestion.ByocIngestor;
 import byoc.ingestion.TileSearch;
 import byoc.ingestion.TileSearch.FileMap;
 import byoc.ingestion.TileSearch.Tile;
@@ -133,7 +133,7 @@ public class IngestCmd implements Runnable {
       }
     }
 
-    Ingestor ingestor = new Ingestor(parent.newByocClient())
+    ByocIngestor ingestor = new ByocIngestor(parent.newByocClient())
       .setCogFactory(new CogFactory()
           .setNoDataValue(noDataValue)
           .setUseCompressionPredictor(!noCompressionPredictor)

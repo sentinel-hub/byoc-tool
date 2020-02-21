@@ -36,7 +36,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 @Log4j2
 @Setter
 @Accessors(chain = true)
-public class Ingestor {
+public class ByocIngestor {
 
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
 
@@ -47,7 +47,7 @@ public class Ingestor {
   private S3ClientBuilder s3ClientBuilder = S3Client.builder();
   private CoverageCalcParams coverageCalcParams;
 
-  public Ingestor(ByocClient byocClient) {
+  public ByocIngestor(ByocClient byocClient) {
     this.byocClient = byocClient;
   }
 
