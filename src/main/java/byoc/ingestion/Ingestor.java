@@ -11,7 +11,12 @@ import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocTile;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -22,14 +27,11 @@ import java.util.stream.Stream;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
-import org.locationtech.jts.geom.Geometry;
 
 @Log4j2
 public class Ingestor {
 
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
-
-  private static final int COVERAGE_MAXIMUM_POINTS = 100;
 
   private final ByocClient byocClient;
   private final ExecutorService executorService;
@@ -155,15 +157,7 @@ public class Ingestor {
     byocTile.setSensingTime(tile.sensingTime());
 
     if (coverageCalculator != null) {
-      Geometry coverage = coverageCalculator.getCoverage();
-      int numPoints = coverage.getNumPoints();
-
-      if (numPoints > COVERAGE_MAXIMUM_POINTS) {
-        printTooManyPointsError(tile, numPoints);
-        return;
-      }
-
-      byocTile.setCoverGeometry(coverage);
+      byocTile.setCoverGeometry(coverageCalculator.getCoverage());
     }
 
     log.info("Creating tile {}", tile.path());
@@ -186,14 +180,6 @@ public class Ingestor {
     for (String error : errors) {
       printTileError(tile, error);
     }
-  }
-
-  private void printTooManyPointsError(Tile tile, int numPoints) {
-    printTileError(
-        tile,
-        String.format(
-            "Coverage with too many points. It has %d points, but it should have at-most %d points.",
-            numPoints, COVERAGE_MAXIMUM_POINTS));
   }
 
   private void printTileError(Tile tile, String message) {
