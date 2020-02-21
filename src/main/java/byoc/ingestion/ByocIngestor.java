@@ -196,7 +196,7 @@ public class ByocIngestor {
 
   @Value
   @Accessors(fluent = true)
-  static class FileSource {
+  public static class FileSource {
 
     private final Path path;
     private final List<BandSource> bandSources;
