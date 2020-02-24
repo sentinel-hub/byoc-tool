@@ -1,7 +1,7 @@
 package byoc.ingestion;
 
-import byoc.ingestion.ByocIngestor.BandSource;
-import byoc.ingestion.ByocIngestor.FileSource;
+import byoc.ingestion.ByocIngestor.BandMap;
+import byoc.ingestion.ByocIngestor.InputFile;
 import byoc.ingestion.ByocIngestor.Tile;
 import byoc.ingestion.FileFinder.Match;
 import java.io.IOException;
@@ -46,14 +46,14 @@ public class TileSearch {
           continue;
         }
 
-        final List<BandSource> bands;
+        final List<BandMap> bands;
         if (!fm.bands().isEmpty()) {
           bands = fm.bands();
         } else {
-          bands = Collections.singletonList(new BandSource(1, fileNameWithoutExtension(file)));
+          bands = Collections.singletonList(new BandMap(1, fileNameWithoutExtension(file)));
         }
 
-        tile.fileSources().add(new FileSource(file, bands));
+        tile.inputFiles().add(new InputFile(file, bands));
         break;
       }
     }
@@ -99,6 +99,6 @@ public class TileSearch {
   public static class FileMap {
 
     private final Pattern filePattern;
-    private final List<BandSource> bands;
+    private final List<BandMap> bands;
   }
 }

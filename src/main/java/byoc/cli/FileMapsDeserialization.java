@@ -1,6 +1,6 @@
 package byoc.cli;
 
-import byoc.ingestion.ByocIngestor.BandSource;
+import byoc.ingestion.ByocIngestor.BandMap;
 import byoc.ingestion.TileSearch.FileMap;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -19,7 +19,7 @@ class FileMapsDeserialization {
     for (String sfm : serializedFileMaps) {
       String[] parts = sfm.split(";");
       Pattern filePattern = Pattern.compile(parts[0]);
-      List<BandSource> bandSources = new LinkedList<>();
+      List<BandMap> bandMaps = new LinkedList<>();
 
       if (parts.length > 1) {
         for (int i = 1; i < parts.length; i++) {
@@ -41,13 +41,13 @@ class FileMapsDeserialization {
                 String.format("Invalid band name \"%s\" in file mapping \"%s\"", component, sfm));
           }
 
-          bandSources.add(new BandSource(index, name));
+          bandMaps.add(new BandMap(index, name));
         }
       } else if (isValidBandName(filePattern.pattern())) {
-        bandSources.add(new BandSource(1, filePattern.pattern()));
+        bandMaps.add(new BandMap(1, filePattern.pattern()));
       }
 
-      fileMaps.add(new FileMap(filePattern, bandSources));
+      fileMaps.add(new FileMap(filePattern, bandMaps));
     }
 
     return fileMaps;

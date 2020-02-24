@@ -1,6 +1,6 @@
 package byoc.ingestion;
 
-import byoc.ingestion.ByocIngestor.BandSource;
+import byoc.ingestion.ByocIngestor.BandMap;
 import byoc.ingestion.ByocIngestor.Tile;
 import byoc.tiff.TiffCompoundDirectory;
 import byoc.tiff.TiffDirectory.SampleFormat;
@@ -28,12 +28,12 @@ public class CogFactory {
   private Boolean useCompressionPredictor = true;
   private Path processingFolder;
 
-  Path createCog(Tile tile, Path inputFile, BandSource bandSource) throws IOException {
+  Path createCog(Tile tile, Path inputFile, BandMap bandMap) throws IOException {
     Path intermediateFile = getIntermediateFile(tile, inputFile);
-    Path outputFile = getOutputFile(tile, inputFile, intermediateFile, bandSource);
+    Path outputFile = getOutputFile(tile, inputFile, intermediateFile, bandMap);
 
     try {
-      createGeoTiff(inputFile, bandSource.index(), noDataValue, intermediateFile);
+      createGeoTiff(inputFile, bandMap.index(), noDataValue, intermediateFile);
       addOverviews(intermediateFile);
       addTiling(intermediateFile, useCompressionPredictor, outputFile);
 
@@ -66,7 +66,7 @@ public class CogFactory {
   }
 
   private Path getOutputFile(
-      Tile tile, Path inputFile, Path intermediateFile, BandSource bandSource) {
+      Tile tile, Path inputFile, Path intermediateFile, BandMap bandMap) {
     final String nameStart;
 
     if (processingFolder == null) {
@@ -77,7 +77,7 @@ public class CogFactory {
 
     return intermediateFile
         .getParent()
-        .resolve(String.format("%s_%s.tiff", nameStart, bandSource.name()));
+        .resolve(String.format("%s_%s.tiff", nameStart, bandMap.name()));
   }
 
   private static String stripSuffix(String fileName) {

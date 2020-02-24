@@ -40,13 +40,16 @@ public class ByocIngestor {
 
   private final ByocClient byocClient;
 
-  private CogFactory cogFactory = new CogFactory();
-  private ExecutorService executorService = Executors.newWorkStealingPool();
-  private S3ClientBuilder s3ClientBuilder = S3Client.builder();
+  private CogFactory cogFactory;
+  private ExecutorService executorService;
+  private S3ClientBuilder s3ClientBuilder;
   private CoverageCalcParams coverageCalcParams;
 
   public ByocIngestor(ByocClient byocClient) {
     this.byocClient = byocClient;
+    this.cogFactory = new CogFactory();
+    this.executorService = Executors.newWorkStealingPool();
+    this.s3ClientBuilder = S3Client.builder();
   }
 
   public void ingest(String collectionId, Collection<Tile> tiles) {
@@ -102,7 +105,7 @@ public class ByocIngestor {
   }
 
   private void ingestTile(ByocCollection collection, Tile tile, S3Uploader s3Uploader) throws IOException {
-    Collection<String> errors = TileValidation.validate(getTiffFiles(tile));
+    Collection<String> errors = TileValidation.validate(findTiffFiles(tile));
 
     if (!errors.isEmpty()) {
       printValidationErrors(tile, errors);
@@ -111,13 +114,13 @@ public class ByocIngestor {
 
     Collection<CogSource> cogSources = new LinkedList<>();
 
-    for (FileSource fileSource : tile.fileSources()) {
-      for (BandSource bandSource : fileSource.bandSources()) {
+    for (InputFile inputFile : tile.inputFiles()) {
+      for (BandMap bandMap : inputFile.bandMaps()) {
 
-        log.info("Creating COG out of image {} at index {}", fileSource.path(), bandSource.index());
-        Path cogPath = cogFactory.createCog(tile, fileSource.path(), bandSource);
+        log.info("Creating COG out of image {} at index {}", inputFile.file(), bandMap.index());
+        Path cogFile = cogFactory.createCog(tile, inputFile.file(), bandMap);
 
-        cogSources.add(new CogSource(fileSource, bandSource, cogPath));
+        cogSources.add(new CogSource(inputFile.file(), bandMap, cogFile));
       }
     }
 
@@ -135,18 +138,18 @@ public class ByocIngestor {
     }
 
     for (CogSource cogSource : cogSources) {
-      FileSource fileSource = cogSource.fileSource();
-      BandSource bandSource = cogSource.bandSource();
+      Path inputFile = cogSource.inputFile();
+      BandMap bandMap = cogSource.bandMap();
       Path cogPath = cogSource.cogPath();
 
       if (coverageCalculator != null) {
-        log.info("Tracing coverage in image {} at index {}", fileSource.path(), bandSource.index());
+        log.info("Tracing coverage in image {} at index {}", inputFile, bandMap.index());
         coverageCalculator.addImage(cogPath);
       }
 
-      String s3Key = String.format("%s/%s.tiff", tile.path(), bandSource.name());
+      String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
       log.info(
-          "Uploading image {} at index {} to s3 {}", fileSource.path(), bandSource.index(), s3Key);
+          "Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
       s3Uploader.uploadWithRetry(collection.getS3Bucket(), s3Key, cogPath);
     }
 
@@ -167,9 +170,9 @@ public class ByocIngestor {
     }
   }
 
-  private List<Path> getTiffFiles(Tile tile) {
-    return tile.fileSources().stream()
-        .map(FileSource::path)
+  private List<Path> findTiffFiles(Tile tile) {
+    return tile.inputFiles().stream()
+        .map(InputFile::file)
         .filter(path -> TIFF_FILE_PATTERN.matcher(path.toString()).find())
         .collect(Collectors.toList());
   }
@@ -191,20 +194,20 @@ public class ByocIngestor {
 
     private final String path;
     private final LocalDateTime sensingTime;
-    private final List<FileSource> fileSources;
+    private final List<InputFile> inputFiles;
   }
 
   @Value
   @Accessors(fluent = true)
-  public static class FileSource {
+  public static class InputFile {
 
-    private final Path path;
-    private final List<BandSource> bandSources;
+    private final Path file;
+    private final List<BandMap> bandMaps;
   }
 
   @Value
   @Accessors(fluent = true)
-  public static class BandSource {
+  public static class BandMap {
 
     private final int index;
     private final String name;
@@ -213,8 +216,8 @@ public class ByocIngestor {
   @Value
   @Accessors(fluent = true)
   private static class CogSource {
-    private final FileSource fileSource;
-    private final BandSource bandSource;
+    private final Path inputFile;
+    private final BandMap bandMap;
     private final Path cogPath;
   }
 }
