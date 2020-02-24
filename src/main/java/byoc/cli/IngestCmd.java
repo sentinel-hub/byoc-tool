@@ -73,9 +73,9 @@ public class IngestCmd implements Runnable {
   private int nThreads;
 
   @ArgGroup(exclusive = false)
-  private CoverageCalcParams coverageCalcParams;
+  private CoverageParams coverageParams;
 
-  private static class CoverageCalcParams extends byoc.cli.CoverageCalcParams {
+  private static class CoverageParams extends byoc.cli.CoverageParams {
 
     @Option(
         names = {"--trace-coverage"},
@@ -140,8 +140,8 @@ public class IngestCmd implements Runnable {
           .setProcessingFolder(processingFolder))
       .setExecutorService(Executors.newFixedThreadPool(nThreads));
 
-    if (coverageCalcParams != null) {
-      ingestor.setCoverageCalcParams(coverageCalcParams);
+    if (coverageParams != null) {
+      ingestor.setCoverageParams(coverageParams);
     }
 
     ingestor.ingest(collectionId, tiles);

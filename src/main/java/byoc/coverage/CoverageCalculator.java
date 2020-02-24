@@ -1,6 +1,6 @@
 package byoc.coverage;
 
-import byoc.cli.CoverageCalcParams;
+import byoc.cli.CoverageParams;
 import byoc.tiff.TiffCompoundDirectory;
 import byoc.tiff.TiffDirectory.Scale;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
@@ -18,7 +18,7 @@ import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 
 public class CoverageCalculator {
 
-  private final CoverageCalcParams params;
+  private final CoverageParams params;
 
   private Geometry coveragesIntersection;
   private Envelope tileEnvelope;
@@ -28,7 +28,7 @@ public class CoverageCalculator {
   private static final BufferParameters BUFFER_PARAMETERS =
       new BufferParameters(1, BufferParameters.CAP_SQUARE, BufferParameters.JOIN_MITRE, 10);
 
-  public CoverageCalculator(CoverageCalcParams params) {
+  public CoverageCalculator(CoverageParams params) {
     this.params = params;
   }
 
@@ -47,8 +47,8 @@ public class CoverageCalculator {
       imageReader.setInput(iis);
 
       int imageIndex =
-          params.imageIndex() < compoundDirectory.directoryCount()
-              ? params.imageIndex()
+          params.getImageIndex() < compoundDirectory.directoryCount()
+              ? params.getImageIndex()
               : compoundDirectory.directoryCount() - 1;
       Geometry geometry = Vectorization.vectorize(imageReader.read(imageIndex), compoundDirectory);
 
@@ -75,8 +75,8 @@ public class CoverageCalculator {
     } else {
       coverage = DouglasPeuckerSimplifier.simplify(coveragesIntersection, 0);
 
-      if (params.negativeBufferInPixels() != 0) {
-        double negativeBuffer = lowestResolution * params.negativeBufferInPixels();
+      if (params.getNegativeBufferInPixels() != 0) {
+        double negativeBuffer = lowestResolution * params.getNegativeBufferInPixels();
 
         Geometry tile = new GeometryFactory().toGeometry(tileEnvelope);
         Geometry coverageInverse = tile.difference(coverage);
@@ -85,8 +85,8 @@ public class CoverageCalculator {
         coverage = coverage.difference(inverseBuf);
       }
 
-      if (params.distanceToleranceInPixels() != 0) {
-        double distanceTolerance = lowestResolution * params.distanceToleranceInPixels();
+      if (params.getDistanceToleranceInPixels() != 0) {
+        double distanceTolerance = lowestResolution * params.getDistanceToleranceInPixels();
 
         coverage = DouglasPeuckerSimplifier.simplify(coverage, distanceTolerance);
       }

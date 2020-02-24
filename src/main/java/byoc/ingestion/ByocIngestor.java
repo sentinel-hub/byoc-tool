@@ -2,7 +2,7 @@ package byoc.ingestion;
 
 import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
 
-import byoc.cli.CoverageCalcParams;
+import byoc.cli.CoverageParams;
 import byoc.coverage.CoverageCalculator;
 import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocCollection;
@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,7 +33,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 @Log4j2
-@Setter
 @Accessors(chain = true)
 public class ByocIngestor {
 
@@ -40,15 +40,25 @@ public class ByocIngestor {
 
   private final ByocClient byocClient;
 
+  @Setter
   private CogFactory cogFactory;
+
+  @Setter
   private ExecutorService executorService;
+
+  @Setter
   private S3ClientBuilder s3ClientBuilder;
-  private CoverageCalcParams coverageCalcParams;
+
+  @Setter
+  private CoverageParams coverageParams;
+
+  @Setter
+  private Consumer<Tile> tileIngestedCallback;
 
   public ByocIngestor(ByocClient byocClient) {
     this.byocClient = byocClient;
     this.cogFactory = new CogFactory();
-    this.executorService = Executors.newWorkStealingPool();
+    this.executorService = Executors.newFixedThreadPool(1);
     this.s3ClientBuilder = S3Client.builder();
   }
 
@@ -133,8 +143,8 @@ public class ByocIngestor {
     }
 
     CoverageCalculator coverageCalculator = null;
-    if (coverageCalcParams != null) {
-      coverageCalculator = new CoverageCalculator(coverageCalcParams);
+    if (coverageParams != null) {
+      coverageCalculator = new CoverageCalculator(coverageParams);
     }
 
     for (CogSource cogSource : cogSources) {
@@ -167,6 +177,10 @@ public class ByocIngestor {
       byocClient.createTile(collection.getId(), byocTile);
     } catch (RuntimeException e) {
       System.err.println(e.getMessage());
+    }
+
+    if (tileIngestedCallback != null) {
+      tileIngestedCallback.accept(tile);
     }
   }
 

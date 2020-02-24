@@ -1,12 +1,14 @@
 package byoc.cli;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import picocli.CommandLine.Option;
 
 @Getter
-@Accessors(fluent = true)
-public class CoverageCalcParams {
+@Setter
+@Accessors(chain = true)
+public class CoverageParams {
 
   @Option(
       names = {"--trace-image-idx"},
