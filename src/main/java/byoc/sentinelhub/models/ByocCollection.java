@@ -13,6 +13,9 @@ public class ByocCollection implements Common.NoJsonAutoDetect {
   @JsonProperty("id")
   private String id;
 
+  @JsonProperty("userId")
+  private String userId;
+
   @JsonProperty("name")
   private String name;
 

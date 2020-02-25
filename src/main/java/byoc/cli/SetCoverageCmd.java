@@ -52,6 +52,10 @@ public class SetCoverageCmd implements Runnable {
         coverageCalculator.addImage(Paths.get(file));
       } else {
         ByocCollection collection = byocClient.getCollection(collectionId);
+        if (collection == null) {
+          throw new RuntimeException("Collection does not exist.");
+        }
+
         S3Client s3 = parent.newS3Client(byocClient.getCollectionS3Region(collectionId));
         processTileBands(collection, tile, s3, coverageCalculator);
       }

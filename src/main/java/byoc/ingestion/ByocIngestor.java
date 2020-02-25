@@ -65,8 +65,12 @@ public class ByocIngestor {
   public void ingest(String collectionId, Collection<Tile> tiles) {
     List<Future<Void>> futures = new ArrayList<>();
 
-    Set<String> existingTiles = byocClient.getAllTilePaths(collectionId);
     ByocCollection collection = byocClient.getCollection(collectionId);
+    if (collection == null) {
+      throw new RuntimeException("Collection does not exist.");
+    }
+
+    Set<String> existingTiles = byocClient.getTilePaths(collectionId);
     Region s3Region = byocClient.getCollectionS3Region(collectionId);
 
     S3Client s3 = s3ClientBuilder.region(s3Region).build();

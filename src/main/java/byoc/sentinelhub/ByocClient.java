@@ -93,9 +93,14 @@ public class ByocClient {
   public ByocCollection getCollection(String collectionId) {
     javax.ws.rs.core.Response response = webTarget.path("collections").path(collectionId).request().get();
 
-    ResponseUtils.ensureStatus(response, 200);
-
-    return response.readEntity(new GenericType<Response<ByocCollection>>() {}).getData();
+    if (response.getStatus() == 200) {
+      return response.readEntity(new GenericType<Response<ByocCollection>>() {}).getData();
+    } else if (response.getStatus() == 404) {
+      return null;
+    } else {
+      Response shResponse = response.readEntity(new GenericType<Response>() {});
+      throw new RuntimeException(shResponse.getError().getMessage());
+    }
   }
 
   public Region getCollectionS3Region(String collectionId) {
@@ -130,7 +135,7 @@ public class ByocClient {
     return new TileIterator(this, collectionId, Arrays.asList(tileIds));
   }
 
-  public Set<String> getAllTilePaths(String collectionId) {
+  public Set<String> getTilePaths(String collectionId) {
     Set<String> tilePaths = new HashSet<>();
 
     Iterator<ByocTile> iter = getTileIterator(collectionId);
@@ -141,10 +146,7 @@ public class ByocClient {
     return tilePaths;
   }
 
-  public UUID createCollection(String name, String s3Bucket) {
-    ByocCollection collection = new ByocCollection();
-    collection.setName(name);
-    collection.setS3Bucket(s3Bucket);
+  public UUID createCollection(ByocCollection collection) {
     javax.ws.rs.core.Response response = webTarget.path("collections").request()
         .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
 
