@@ -156,13 +156,17 @@ public class ByocClient {
     return UUID.fromString(entity.getData().getId());
   }
 
-  public void createTile(String collectionId, ByocTile tile) {
+  public String createTile(String collectionId, ByocTile tile) {
     javax.ws.rs.core.Response response =
         tilesTarget(collectionId)
             .request()
             .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));
 
     ResponseUtils.ensureStatus(response, 201);
+
+    ByocTile returnedTile = response.readEntity(new GenericType<Response<ByocTile>>() {}).getData();
+
+    return returnedTile.getId();
   }
 
   public void updateTile(String collectionId, ByocTile tile) {

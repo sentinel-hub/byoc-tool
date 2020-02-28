@@ -5,15 +5,9 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-class S3Uploader implements AutoCloseable {
+class S3Upload {
 
-  private final S3Client s3;
-
-  S3Uploader(S3Client s3) {
-    this.s3 = s3;
-  }
-
-  void uploadWithRetry(String bucket, String key, Path path) {
+  static void uploadWithRetry(S3Client s3, String bucket, String key, Path path) {
     int i = 0;
 
     while (true) {
@@ -28,10 +22,5 @@ class S3Uploader implements AutoCloseable {
         }
       }
     }
-  }
-
-  @Override
-  public void close() {
-    s3.close();
   }
 }

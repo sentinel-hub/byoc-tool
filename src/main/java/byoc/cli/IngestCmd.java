@@ -3,11 +3,12 @@ package byoc.cli;
 import static byoc.tiff.TiffDirectory.TAG_GDAL_NO_DATA_VALUE;
 
 import byoc.ByocTool;
-import byoc.ingestion.CogFactory;
 import byoc.ingestion.ByocIngestor;
+import byoc.ingestion.ByocIngestor.TileIngestionException;
+import byoc.ingestion.ByocIngestor.Tile;
+import byoc.ingestion.CogFactory;
 import byoc.ingestion.TileSearch;
 import byoc.ingestion.TileSearch.FileMap;
-import byoc.ingestion.ByocIngestor.Tile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +16,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-import picocli.CommandLine.*;
+import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
 
 @Command(
     name = "ingest",
@@ -144,7 +149,12 @@ public class IngestCmd implements Runnable {
       ingestor.setCoverageParams(coverageParams);
     }
 
-    ingestor.ingest(collectionId, tiles);
+    try {
+      ingestor.ingest(collectionId, tiles);
+    } catch (TileIngestionException e) {
+      System.err.println(e.getMessage());
+      e.getErrors().forEach(System.err::println);
+    }
   }
 
   private void printTiles(Collection<Tile> tiles) {

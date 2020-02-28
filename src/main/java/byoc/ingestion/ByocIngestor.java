@@ -16,14 +16,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -62,8 +63,8 @@ public class ByocIngestor {
     this.s3ClientBuilder = S3Client.builder();
   }
 
-  public void ingest(String collectionId, Collection<Tile> tiles) {
-    List<Future<Void>> futures = new ArrayList<>();
+  public Collection<String> ingest(String collectionId, Collection<Tile> tiles) {
+    List<Future<String>> futures = new ArrayList<>();
 
     ByocCollection collection = byocClient.getCollection(collectionId);
     if (collection == null) {
@@ -72,9 +73,7 @@ public class ByocIngestor {
 
     Set<String> existingTiles = byocClient.getTilePaths(collectionId);
     Region s3Region = byocClient.getCollectionS3Region(collectionId);
-
     S3Client s3 = s3ClientBuilder.region(s3Region).build();
-    S3Uploader s3Uploader = new S3Uploader(s3);
 
     for (Tile tile : tiles) {
       if (doesTileExist(existingTiles, tile)) {
@@ -82,31 +81,25 @@ public class ByocIngestor {
         continue;
       }
 
-      futures.add(
-          executorService.submit(
-              () -> {
-                ingestTile(collection, tile, s3Uploader);
-
-                return null;
-              }));
+      futures.add(executorService.submit(() -> ingestTile(collection, tile, s3)));
     }
 
-    executorService.shutdown();
+    List<String> createdTiles = new LinkedList<>();
 
-    for (Future<Void> future : futures) {
+    for (Future<String> future : futures) {
       try {
-        future.get();
-      } catch (Exception e) {
+        createdTiles.add(future.get());
+      } catch (ExecutionException e) {
+        if (e.getCause() instanceof TileIngestionException) {
+          throw (TileIngestionException) e.getCause();
+        }
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
 
-    try {
-      executorService.awaitTermination(10, TimeUnit.DAYS);
-    } catch (InterruptedException e) { // ignore
-    }
-
-    s3Uploader.close();
+    return createdTiles;
   }
 
   private boolean doesTileExist(Set<String> existingTiles, Tile tile) {
@@ -118,12 +111,11 @@ public class ByocIngestor {
     return optional.isPresent();
   }
 
-  private void ingestTile(ByocCollection collection, Tile tile, S3Uploader s3Uploader) throws IOException {
+  private String ingestTile(ByocCollection collection, Tile tile, S3Client s3) throws IOException {
     Collection<String> errors = TileValidation.validate(findTiffFiles(tile));
 
     if (!errors.isEmpty()) {
-      printValidationErrors(tile, errors);
-      return;
+      throw new TileIngestionException(tile, errors);
     }
 
     Collection<CogSource> cogSources = new LinkedList<>();
@@ -142,8 +134,7 @@ public class ByocIngestor {
     errors = TileValidation.validate(cogPaths);
 
     if (!errors.isEmpty()) {
-      printValidationErrors(tile, errors);
-      return;
+      throw new TileIngestionException(tile, errors);
     }
 
     CoverageCalculator coverageCalculator = null;
@@ -164,7 +155,7 @@ public class ByocIngestor {
       String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
       log.info(
           "Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
-      s3Uploader.uploadWithRetry(collection.getS3Bucket(), s3Key, cogPath);
+      S3Upload.uploadWithRetry(s3, collection.getS3Bucket(), s3Key, cogPath);
     }
 
     ByocTile byocTile = new ByocTile();
@@ -177,15 +168,13 @@ public class ByocIngestor {
 
     log.info("Creating tile {}", tile.path());
 
-    try {
-      byocClient.createTile(collection.getId(), byocTile);
-    } catch (RuntimeException e) {
-      System.err.println(e.getMessage());
-    }
+    String tileId = byocClient.createTile(collection.getId(), byocTile);
 
     if (tileIngestedCallback != null) {
       tileIngestedCallback.accept(tile);
     }
+
+    return tileId;
   }
 
   private List<Path> findTiffFiles(Tile tile) {
@@ -193,17 +182,6 @@ public class ByocIngestor {
         .map(InputFile::file)
         .filter(path -> TIFF_FILE_PATTERN.matcher(path.toString()).find())
         .collect(Collectors.toList());
-  }
-
-  private void printValidationErrors(Tile tile, Collection<String> errors) {
-    for (String error : errors) {
-      printTileError(tile, error);
-    }
-  }
-
-  private void printTileError(Tile tile, String message) {
-    System.err.println(
-        String.format("Failed to ingest tile with path \"%s\". Reason: %s", tile.path(), message));
   }
 
   @Value
@@ -237,5 +215,17 @@ public class ByocIngestor {
     private final Path inputFile;
     private final BandMap bandMap;
     private final Path cogPath;
+  }
+
+  @Getter
+  public
+  class TileIngestionException extends RuntimeException {
+
+    private final Collection<String> errors;
+
+    TileIngestionException(Tile tile, Collection<String> errors) {
+      super("Failed to ingest tile with path " + tile.path());
+      this.errors = errors;
+    }
   }
 }
