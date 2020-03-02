@@ -1,6 +1,7 @@
 package byoc.sentinelhub;
 
 import byoc.sentinelhub.models.ByocTile;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,7 +12,7 @@ class TileIterator implements Iterator<ByocTile> {
   private final String collectionId;
   private final List<String> tileIds;
 
-  TileIterator(ByocClient byocClient, String collectionId, List<String> tileIds) {
+  TileIterator(ByocClient byocClient, String collectionId, Collection<String> tileIds) {
     this.byocClient = byocClient;
     this.collectionId = collectionId;
     this.tileIds = new LinkedList<>(tileIds);

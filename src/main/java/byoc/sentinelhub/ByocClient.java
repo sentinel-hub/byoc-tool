@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -131,8 +131,8 @@ public class ByocClient {
     return new PagingTileIterator(this, collectionId);
   }
 
-  public Iterator<ByocTile> getTileIterator(String collectionId, String... tileIds) {
-    return new TileIterator(this, collectionId, Arrays.asList(tileIds));
+  public Iterator<ByocTile> getTileIterator(String collectionId, Collection<String> tileIds) {
+    return new TileIterator(this, collectionId, tileIds);
   }
 
   public Set<String> getTilePaths(String collectionId) {
