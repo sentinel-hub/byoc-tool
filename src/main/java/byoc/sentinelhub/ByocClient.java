@@ -131,10 +131,6 @@ public class ByocClient {
     return new PagingTileIterator(this, collectionId);
   }
 
-  public Iterator<ByocTile> getTileIterator(String collectionId, Collection<String> tileIds) {
-    return new TileIterator(this, collectionId, tileIds);
-  }
-
   public Set<String> getTilePaths(String collectionId) {
     Set<String> tilePaths = new HashSet<>();
 
