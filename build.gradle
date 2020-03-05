@@ -76,7 +76,7 @@ dependencies {
 
     // required with newer JDKs
     implementation 'javax.activation:activation:1.1'
-    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.0'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
 
     // testing
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
