@@ -2,7 +2,7 @@ package byoc.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import byoc.ingestion.TileSearch.BandSource;
+import byoc.ingestion.ByocIngestor.BandMap;
 import byoc.ingestion.TileSearch.FileMap;
 import java.util.Collections;
 import java.util.List;
@@ -29,11 +29,11 @@ class FilePatternsDeserializationTest {
     FileMap fp = items.get(0);
     assertEquals(2, fp.bands().size());
 
-    BandSource firstBand = fp.bands().get(0);
+    BandMap firstBand = fp.bands().get(0);
     assertEquals(1, firstBand.index());
     assertEquals("R", firstBand.name());
 
-    BandSource secondBand = fp.bands().get(1);
+    BandMap secondBand = fp.bands().get(1);
     assertEquals(2, secondBand.index());
     assertEquals("G", secondBand.name());
   }
