@@ -156,7 +156,7 @@ public class CogFactory {
     runCommand(command.toArray(new String[0]));
   }
 
-  private static Integer getPredictor(int sampleFormat) {
+  static Integer getPredictor(int sampleFormat) {
     final Integer predictor;
     if (sampleFormat == SampleFormat.UINT || sampleFormat == SampleFormat.INT) {
       predictor = 2;

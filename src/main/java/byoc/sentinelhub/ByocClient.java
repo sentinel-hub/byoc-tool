@@ -71,7 +71,7 @@ public class ByocClient {
     this.webTarget = httpClient.target(BYOC_SERVICE_BASE_URL);
   }
 
-  private static ObjectMapper newObjectMapper() {
+  static ObjectMapper newObjectMapper() {
     ObjectMapper objectMapper;
     objectMapper = new ObjectMapper();
     objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
