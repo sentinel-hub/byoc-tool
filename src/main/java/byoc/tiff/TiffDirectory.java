@@ -1,14 +1,15 @@
 package byoc.tiff;
 
-import static com.twelvemonkeys.imageio.metadata.tiff.TIFF.*;
-
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import org.locationtech.jts.geom.Envelope;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.twelvemonkeys.imageio.metadata.tiff.TIFF.*;
 
 public class TiffDirectory {
 
@@ -28,6 +29,7 @@ public class TiffDirectory {
 
   public Long imageWidth() {
     Entry entry = getEntry(TAG_IMAGE_WIDTH);
+
     if (entry == null) {
       return null;
     }
@@ -37,6 +39,7 @@ public class TiffDirectory {
 
   public Long imageHeight() {
     Entry entry = getEntry(TAG_IMAGE_HEIGHT);
+
     if (entry == null) {
       return null;
     }
@@ -46,6 +49,7 @@ public class TiffDirectory {
 
   public int sampleFormat() {
     Entry entry = getEntry(TAG_SAMPLE_FORMAT);
+
     if (entry == null) {
       return SampleFormat.UINT;
     }
@@ -55,6 +59,7 @@ public class TiffDirectory {
 
   public Scale scale() {
     Entry entry = getEntry(TAG_MODEL_PIXEL_SCALE);
+
     if (entry == null) {
       return null;
     }
@@ -64,6 +69,7 @@ public class TiffDirectory {
 
   public String noDataValue() {
     Entry entry = getEntry(TAG_GDAL_NO_DATA_VALUE);
+
     if (entry == null) {
       return null;
     }
@@ -83,6 +89,7 @@ public class TiffDirectory {
 
   public TiePoint modelTiePoint() {
     Entry entry = getEntry(TAG_MODEL_TIE_POINT);
+
     if (entry == null) {
       return null;
     }
@@ -92,6 +99,7 @@ public class TiffDirectory {
 
   public String geoAsciiParams() {
     Entry entry = getEntry(TAG_GEO_ASCII_PARAMS);
+
     if (entry == null) {
       return null;
     }
