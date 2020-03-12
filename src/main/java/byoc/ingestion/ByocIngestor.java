@@ -163,7 +163,7 @@ public class ByocIngestor {
     byocTile.setSensingTime(tile.sensingTime());
 
     if (coverageCalculator != null) {
-      byocTile.setCoverGeometry(coverageCalculator.getCoverage());
+      byocTile.setJtsCoverGeometry(coverageCalculator.getCoverage());
     }
 
     log.info("Creating tile {}", tile.path());

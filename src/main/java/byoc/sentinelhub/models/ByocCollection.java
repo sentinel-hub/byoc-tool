@@ -27,7 +27,7 @@ public class ByocCollection implements Common.NoJsonAutoDetect {
 
   @Getter
   @Setter
-  public class AdditionalData {
+  public static class AdditionalData {
 
     @JsonProperty("bands")
     private Map<String, Object> bands;
