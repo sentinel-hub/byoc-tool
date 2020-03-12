@@ -37,7 +37,7 @@ public class TileSearch {
 
       Tile tile = tiles.getOrDefault(tilePath, null);
       if (tile == null) {
-        tile = new Tile(tilePath, sensingTime(m.matcher()), new LinkedList<>());
+        tile = new Tile(tilePath, sensingTime(m.matcher()), null, new LinkedList<>());
         tiles.put(tilePath, tile);
       }
 
