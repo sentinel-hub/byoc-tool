@@ -1,21 +1,24 @@
 package byoc.ingestion;
 
-import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
-
 import byoc.cli.CoverageParams;
 import byoc.coverage.CoverageCalculator;
 import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.Value;
+import lombok.experimental.Accessors;
+import lombok.extern.log4j.Log4j2;
+import org.geojson.GeoJsonObject;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,14 +27,8 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.log4j.Log4j2;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
+
+import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
 
 @Log4j2
 @Accessors(chain = true)
@@ -138,7 +135,7 @@ public class ByocIngestor {
     }
 
     CoverageCalculator coverageCalculator = null;
-    if (coverageParams != null) {
+    if (coverageParams != null && tile.coverage() == null) {
       coverageCalculator = new CoverageCalculator(coverageParams);
     }
 
@@ -163,7 +160,9 @@ public class ByocIngestor {
     byocTile.setSensingTime(tile.sensingTime());
 
     if (coverageCalculator != null) {
-      byocTile.setCoverGeometry(coverageCalculator.getCoverage());
+      byocTile.setJtsCoverGeometry(coverageCalculator.getCoverage());
+    } else if (tile.coverage() != null) {
+      byocTile.setCoverGeometry(tile.coverage());
     }
 
     log.info("Creating tile {}", tile.path());
@@ -190,6 +189,7 @@ public class ByocIngestor {
 
     private final String path;
     private final LocalDateTime sensingTime;
+    private final GeoJsonObject coverage;
     private final List<InputFile> inputFiles;
   }
 

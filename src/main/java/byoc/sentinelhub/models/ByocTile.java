@@ -54,11 +54,7 @@ public class ByocTile implements Common.NoJsonAutoDetect {
     return getPath().replace(Constants.BAND_PLACEHOLDER, band);
   }
 
-  public void setCoverGeometry(Geometry coverage) {
+  public void setJtsCoverGeometry(Geometry coverage) {
     setCoverGeometry(JtsUtils.toGeoJson(coverage));
-  }
-
-  private void setCoverGeometry(GeoJsonObject coverage) {
-    this.coverGeometry = coverage;
   }
 }

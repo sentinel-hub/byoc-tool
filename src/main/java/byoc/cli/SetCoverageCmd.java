@@ -71,7 +71,7 @@ public class SetCoverageCmd implements Runnable {
       return;
     }
 
-    tile.setCoverGeometry(coverage);
+    tile.setJtsCoverGeometry(coverage);
     byocClient.updateTile(collectionId, tile);
   }
 
