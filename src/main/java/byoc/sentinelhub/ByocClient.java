@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -53,6 +54,10 @@ public class ByocClient {
   }
 
   public ByocClient(AuthClient authClient) {
+    this(authClient::accessToken);
+  }
+
+  public ByocClient(Supplier<String> accessTokenSupplier) {
     ObjectMapper objectMapper = newObjectMapper();
 
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
@@ -62,7 +67,7 @@ public class ByocClient {
     clientConfig.register(jsonProvider);
 
     clientConfig.register((ClientRequestFilter) requestContext ->
-        requestContext.getHeaders().add("Authorization", "Bearer " + authClient.accessToken()));
+        requestContext.getHeaders().add("Authorization", "Bearer " + accessTokenSupplier.get()));
 
     clientConfig.register((ClientRequestFilter) requestContext ->
         requestContext.getHeaders().add(HttpHeaders.USER_AGENT, USER_AGENT));
