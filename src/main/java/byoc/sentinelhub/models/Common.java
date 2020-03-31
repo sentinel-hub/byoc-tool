@@ -50,6 +50,5 @@ public class Common {
       getterVisibility = Visibility.NONE,
       setterVisibility = Visibility.NONE,
       creatorVisibility = Visibility.NONE)
-  static
   interface NoJsonAutoDetect {}
 }

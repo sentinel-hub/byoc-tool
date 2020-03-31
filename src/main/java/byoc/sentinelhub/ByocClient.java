@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -66,11 +65,16 @@ public class ByocClient {
     ClientConfig clientConfig = new ClientConfig();
     clientConfig.register(jsonProvider);
 
-    clientConfig.register((ClientRequestFilter) requestContext ->
-        requestContext.getHeaders().add("Authorization", "Bearer " + accessTokenSupplier.get()));
+    clientConfig.register(
+        (ClientRequestFilter)
+            requestContext ->
+                requestContext
+                    .getHeaders()
+                    .add("Authorization", "Bearer " + accessTokenSupplier.get()));
 
-    clientConfig.register((ClientRequestFilter) requestContext ->
-        requestContext.getHeaders().add(HttpHeaders.USER_AGENT, USER_AGENT));
+    clientConfig.register(
+        (ClientRequestFilter)
+            requestContext -> requestContext.getHeaders().add(HttpHeaders.USER_AGENT, USER_AGENT));
 
     this.httpClient = ClientBuilder.newClient(clientConfig);
     this.webTarget = httpClient.target(BYOC_SERVICE_BASE_URL);
@@ -96,7 +100,8 @@ public class ByocClient {
   }
 
   public ByocCollection getCollection(String collectionId) {
-    javax.ws.rs.core.Response response = webTarget.path("collections").path(collectionId).request().get();
+    javax.ws.rs.core.Response response =
+        webTarget.path("collections").path(collectionId).request().get();
 
     if (response.getStatus() == 200) {
       return response.readEntity(new GenericType<Response<ByocCollection>>() {}).getData();
@@ -109,7 +114,8 @@ public class ByocClient {
   }
 
   public Region getCollectionS3Region(String collectionId) {
-    javax.ws.rs.core.Response response = webTarget.path("global").queryParam("ids", collectionId).request().get();
+    javax.ws.rs.core.Response response =
+        webTarget.path("global").queryParam("ids", collectionId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
 
@@ -148,12 +154,16 @@ public class ByocClient {
   }
 
   public UUID createCollection(ByocCollection collection) {
-    javax.ws.rs.core.Response response = webTarget.path("collections").request()
-        .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
+    javax.ws.rs.core.Response response =
+        webTarget
+            .path("collections")
+            .request()
+            .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
 
     ResponseUtils.ensureStatus(response, 201);
 
-    Response<ByocCollection> entity = response.readEntity(new GenericType<Response<ByocCollection>>() {});
+    Response<ByocCollection> entity =
+        response.readEntity(new GenericType<Response<ByocCollection>>() {});
     return UUID.fromString(entity.getData().getId());
   }
 

@@ -4,21 +4,18 @@ import byoc.ingestion.ByocIngestor.BandMap;
 import byoc.ingestion.ByocIngestor.Tile;
 import byoc.tiff.TiffCompoundDirectory;
 import byoc.tiff.TiffDirectory.SampleFormat;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
 @Setter
 @Accessors(chain = true)
@@ -34,7 +31,7 @@ public class CogFactory {
 
     try {
       createGeoTiff(inputFile, bandMap.index(), noDataValue, intermediateFile);
-      addOverviews(intermediateFile);
+      addOverviews(intermediateFile, bandMap.overviewLevels());
       addTiling(intermediateFile, useCompressionPredictor, outputFile);
 
       return outputFile;
@@ -65,8 +62,7 @@ public class CogFactory {
     }
   }
 
-  private Path getOutputFile(
-      Tile tile, Path inputFile, Path intermediateFile, BandMap bandMap) {
+  private Path getOutputFile(Tile tile, Path inputFile, Path intermediateFile, BandMap bandMap) {
     final String nameStart;
 
     if (processingFolder == null) {
@@ -104,17 +100,24 @@ public class CogFactory {
     runCommand(command.toArray(new String[0]));
   }
 
-  private static void addOverviews(Path inputPath) {
-    runCommand(
-        "gdaladdo",
-        "-r",
-        "average",
-        "--config",
-        "GDAL_TIFF_OVR_BLOCKSIZE",
-        "1024",
-        inputPath.toAbsolutePath().toString(),
-        "-minsize",
-        "1024");
+  private static void addOverviews(Path inputPath, int[] overviewLevels) {
+    List<String> cmd = new LinkedList<>(Arrays.asList(  "gdaladdo",
+            "-r",
+            "average",
+            "--config",
+            "GDAL_TIFF_OVR_BLOCKSIZE",
+            "1024",
+            inputPath.toAbsolutePath().toString()));
+
+    if (overviewLevels == null) {
+      cmd.addAll(Arrays.asList("-minsize", "1024"));
+    } else {
+      for (double level : overviewLevels) {
+        cmd.add(String.valueOf(level));
+      }
+    }
+
+    runCommand(cmd.toArray(new String[0]));
   }
 
   private static void addTiling(Path inputPath, boolean compressionPredictor, Path outputPath)

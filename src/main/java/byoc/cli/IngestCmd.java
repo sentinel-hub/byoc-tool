@@ -4,8 +4,8 @@ import static byoc.tiff.TiffDirectory.TAG_GDAL_NO_DATA_VALUE;
 
 import byoc.ByocTool;
 import byoc.ingestion.ByocIngestor;
-import byoc.ingestion.ByocIngestor.TileIngestionException;
 import byoc.ingestion.ByocIngestor.Tile;
+import byoc.ingestion.ByocIngestor.TileIngestionException;
 import byoc.ingestion.CogFactory;
 import byoc.ingestion.TileSearch;
 import byoc.ingestion.TileSearch.FileMap;
@@ -138,12 +138,14 @@ public class IngestCmd implements Runnable {
       }
     }
 
-    ByocIngestor ingestor = new ByocIngestor(parent.newByocClient())
-      .setCogFactory(new CogFactory()
-          .setNoDataValue(noDataValue)
-          .setUseCompressionPredictor(!noCompressionPredictor)
-          .setProcessingFolder(processingFolder))
-      .setExecutorService(Executors.newFixedThreadPool(nThreads));
+    ByocIngestor ingestor =
+        new ByocIngestor(parent.newByocClient())
+            .setCogFactory(
+                new CogFactory()
+                    .setNoDataValue(noDataValue)
+                    .setUseCompressionPredictor(!noCompressionPredictor)
+                    .setProcessingFolder(processingFolder))
+            .setExecutorService(Executors.newFixedThreadPool(nThreads));
 
     if (coverageParams != null) {
       ingestor.setCoverageParams(coverageParams);

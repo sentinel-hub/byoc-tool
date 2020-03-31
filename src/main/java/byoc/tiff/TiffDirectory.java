@@ -1,15 +1,14 @@
 package byoc.tiff;
 
+import static com.twelvemonkeys.imageio.metadata.tiff.TIFF.*;
+
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import org.locationtech.jts.geom.Envelope;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static com.twelvemonkeys.imageio.metadata.tiff.TIFF.*;
 
 public class TiffDirectory {
 

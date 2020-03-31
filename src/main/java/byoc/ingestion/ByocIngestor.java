@@ -1,20 +1,12 @@
 package byoc.ingestion;
 
+import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
+
 import byoc.cli.CoverageParams;
 import byoc.coverage.CoverageCalculator;
 import byoc.sentinelhub.ByocClient;
 import byoc.sentinelhub.models.ByocCollection;
 import byoc.sentinelhub.models.ByocTile;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.log4j.Log4j2;
-import org.geojson.GeoJsonObject;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -27,8 +19,16 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static byoc.sentinelhub.Constants.BAND_PLACEHOLDER;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.Value;
+import lombok.experimental.Accessors;
+import lombok.extern.log4j.Log4j2;
+import org.geojson.GeoJsonObject;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 @Log4j2
 @Accessors(chain = true)
@@ -38,20 +38,15 @@ public class ByocIngestor {
 
   private final ByocClient byocClient;
 
-  @Setter
-  private CogFactory cogFactory;
+  @Setter private CogFactory cogFactory;
 
-  @Setter
-  private ExecutorService executorService;
+  @Setter private ExecutorService executorService;
 
-  @Setter
-  private S3ClientBuilder s3ClientBuilder;
+  @Setter private S3ClientBuilder s3ClientBuilder;
 
-  @Setter
-  private CoverageParams coverageParams;
+  @Setter private CoverageParams coverageParams;
 
-  @Setter
-  private Consumer<Tile> tileIngestedCallback;
+  @Setter private Consumer<Tile> tileIngestedCallback;
 
   public ByocIngestor(ByocClient byocClient) {
     this.byocClient = byocClient;
@@ -150,8 +145,7 @@ public class ByocIngestor {
       }
 
       String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
-      log.info(
-          "Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
+      log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
       S3Upload.uploadWithRetry(s3, collection.getS3Bucket(), s3Key, cogPath);
     }
 
@@ -201,12 +195,19 @@ public class ByocIngestor {
     private final List<BandMap> bandMaps;
   }
 
-  @Value
+  @RequiredArgsConstructor
+  @Getter
   @Accessors(fluent = true)
   public static class BandMap {
 
     private final int index;
     private final String name;
+    private int[] overviewLevels;
+
+    public BandMap setOverviewLevels(int[] levels) {
+      overviewLevels = levels;
+      return this;
+    }
   }
 
   @Value
@@ -218,8 +219,7 @@ public class ByocIngestor {
   }
 
   @Getter
-  public
-  class TileIngestionException extends RuntimeException {
+  public class TileIngestionException extends RuntimeException {
 
     private final Collection<String> errors;
 
