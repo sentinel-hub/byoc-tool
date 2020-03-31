@@ -57,10 +57,6 @@ class TileValidation {
       if (differentValues(ifds, TiffDirectory::modelTiePoint)) {
         errors.add(differentTiePoints());
       }
-
-      if (differentValues(ifds, TiffDirectory::scale)) {
-        errors.add(differentScales());
-      }
     } catch (IOException e) {
       throw new RuntimeException("Error occurred during validation", e);
     } finally {
