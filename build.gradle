@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.sinergise.sentinel'
-version = '0.2.0-rc6'
+version = '0.2.0-rc7'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -85,7 +85,7 @@ dependencies {
 }
 
 application {
-    mainClassName = "byoc.ByocTool"
+    mainClassName = "com.sinergise.sentinel.byoctool.ByocTool"
 }
 
 // creates a slim JDK runtime for distribution
