@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.sinergise.sentinel'
-version = '0.2.0-rc7'
+version = '0.2.0-rc8'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
