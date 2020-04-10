@@ -1,19 +1,19 @@
 package com.sinergise.sentinel.byoctool.sentinelhub.models;
 
-import com.sinergise.sentinel.byoctool.sentinelhub.Constants;
-import com.sinergise.sentinel.byoctool.utils.JtsUtils;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.sinergise.sentinel.byoctool.sentinelhub.Constants;
+import com.sinergise.sentinel.byoctool.utils.JtsUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.geojson.GeoJsonObject;
 import org.locationtech.jts.geom.Geometry;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -34,6 +34,9 @@ public class ByocTile implements Common.NoJsonAutoDetect {
 
   @JsonProperty("coverGeometry")
   private GeoJsonObject coverGeometry;
+
+  @JsonProperty("additionalData")
+  private AdditionalData additionalData;
 
   private Map<String, Object> other = new HashMap<>();
 
@@ -57,5 +60,13 @@ public class ByocTile implements Common.NoJsonAutoDetect {
 
   public void setJtsCoverGeometry(Geometry coverage) {
     setCoverGeometry(JtsUtils.toGeoJson(coverage));
+  }
+
+  @Getter
+  @Setter
+  public static class AdditionalData {
+
+    @JsonProperty("failedIngestionCause")
+    private String failedIngestionCause;
   }
 }
