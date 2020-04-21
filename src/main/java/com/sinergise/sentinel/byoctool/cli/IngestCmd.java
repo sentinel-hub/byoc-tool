@@ -157,6 +157,10 @@ public class IngestCmd implements Runnable {
       System.err.println(e.getMessage());
       e.getErrors().forEach(System.err::println);
     }
+
+    System.out.println("Finished.");
+
+    ingestor.getExecutorService().shutdown();
   }
 
   private void printTiles(Collection<Tile> tiles) {

@@ -1,7 +1,10 @@
 package com.sinergise.sentinel.byoctool.ingestion;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.BandMap;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
+import com.sinergise.sentinel.byoctool.ingestion.GdalInfo.Band;
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.SampleFormat;
 import lombok.Setter;
@@ -9,10 +12,11 @@ import lombok.experimental.Accessors;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,7 +34,14 @@ public class CogFactory {
     Path outputFile = getOutputFile(tile, inputFile, intermediateFile, bandMap);
 
     try {
-      createGeoTiff(inputFile, bandMap.index(), noDataValue, intermediateFile);
+      GdalInfo gdalInfo = getGdalInfo(inputFile);
+      String dataType = gdalInfo.getBands().stream()
+              .filter(band -> bandMap.index() == band.getBand())
+              .findFirst()
+              .map(Band::getType)
+              .orElse(null);
+
+      createGeoTiff(inputFile, bandMap.index(), noDataValue, dataType, intermediateFile);
       addOverviews(intermediateFile, bandMap.overviewLevels());
       addTiling(intermediateFile, useCompressionPredictor, outputFile);
 
@@ -84,8 +95,13 @@ public class CogFactory {
     return tile.path().replace(File.separatorChar, '_');
   }
 
+  private GdalInfo getGdalInfo(Path inputFile) throws JsonProcessingException {
+    String output = ProcessUtil.runCommand("gdalinfo", "-json", inputFile.toString());
+    return new ObjectMapper().readValue(output, GdalInfo.class);
+  }
+
   private static void createGeoTiff(
-      Path inputPath, int bandNumber, Integer noDataValue, Path outPath) {
+      Path inputPath, int bandNumber, Integer noDataValue, String dataType, Path outPath) {
     List<String> command =
         new LinkedList<>(
             Arrays.asList("gdal_translate", "-of", "GTIFF", "-b", String.valueOf(bandNumber)));
@@ -94,10 +110,14 @@ public class CogFactory {
       command.addAll(Arrays.asList("-a_nodata", String.valueOf(noDataValue)));
     }
 
+    if (dataType != null) {
+      command.addAll(Arrays.asList("-ot", dataType));
+    }
+
     command.addAll(
         Arrays.asList(inputPath.toAbsolutePath().toString(), outPath.toAbsolutePath().toString()));
 
-    runCommand(command.toArray(new String[0]));
+    ProcessUtil.runCommand(command.toArray(new String[0]));
   }
 
   private static void addOverviews(Path inputPath, int[] overviewLevels) {
@@ -117,7 +137,7 @@ public class CogFactory {
       }
     }
 
-    runCommand(cmd.toArray(new String[0]));
+    ProcessUtil.runCommand(cmd.toArray(new String[0]));
   }
 
   private static void addTiling(Path inputPath, boolean compressionPredictor, Path outputPath)
@@ -156,7 +176,7 @@ public class CogFactory {
         Arrays.asList(
             inputPath.toAbsolutePath().toString(), outputPath.toAbsolutePath().toString()));
 
-    runCommand(command.toArray(new String[0]));
+    ProcessUtil.runCommand(command.toArray(new String[0]));
   }
 
   static Integer getPredictor(int sampleFormat) {
@@ -169,34 +189,5 @@ public class CogFactory {
       predictor = null;
     }
     return predictor;
-  }
-
-  private static void runCommand(String... command) {
-    try {
-      ProcessBuilder pb = new ProcessBuilder(command);
-      Process process = pb.start();
-
-      List<String> errorLines = new ArrayList<>();
-      try (BufferedReader rdr =
-          new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-        String s;
-        while ((s = rdr.readLine()) != null) {
-          errorLines.add(s);
-        }
-      }
-
-      process.waitFor();
-      int exitValue = process.exitValue();
-      if (exitValue != 0) {
-        throw new RuntimeException(
-            String.format(
-                "exit value = %d, while running \"%s\". output:\n%s",
-                exitValue, String.join(" ", command), String.join("\n", errorLines)));
-      }
-      process.destroy();
-    } catch (Exception e) {
-      throw new RuntimeException(
-          String.format("Running command %s failed!", String.join(" ", command)), e);
-    }
   }
 }
