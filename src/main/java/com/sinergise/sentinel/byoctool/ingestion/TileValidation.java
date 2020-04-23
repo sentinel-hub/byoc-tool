@@ -2,7 +2,6 @@ package com.sinergise.sentinel.byoctool.ingestion;
 
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -85,19 +84,23 @@ class TileValidation {
 
   private static String differentXYScale(Path path) {
     return String.format(
-        "File %s has different x and y scale in TIFF tag %s.", path, TiffDirectory.TAG_MODEL_PIXEL_SCALE);
+        "File %s has different x and y scale in TIFF tag %s.",
+        path, TiffDirectory.TAG_MODEL_PIXEL_SCALE);
   }
 
   private static String differentGeoParams() {
-    return String.format("Files have different values in TIFF tag %d.", TiffDirectory.TAG_GEO_ASCII_PARAMS);
+    return String.format(
+        "Files have different values in TIFF tag %d.", TiffDirectory.TAG_GEO_ASCII_PARAMS);
   }
 
   private static String differentTiePoints() {
-    return String.format("Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_TIE_POINT);
+    return String.format(
+        "Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_TIE_POINT);
   }
 
   private static String differentScales() {
-    return String.format("Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_PIXEL_SCALE);
+    return String.format(
+        "Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_PIXEL_SCALE);
   }
 
   private static String unsupportedEpsgcode(Integer epsgCode) {
