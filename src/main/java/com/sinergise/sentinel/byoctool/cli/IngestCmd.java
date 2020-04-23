@@ -7,6 +7,7 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.TileIngestionExcep
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
+import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,8 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-
-import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;

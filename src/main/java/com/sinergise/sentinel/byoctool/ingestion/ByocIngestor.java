@@ -1,21 +1,12 @@
 package com.sinergise.sentinel.byoctool.ingestion;
 
+import static com.sinergise.sentinel.byoctool.sentinelhub.Constants.BAND_PLACEHOLDER;
+
 import com.sinergise.sentinel.byoctool.cli.CoverageParams;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.Value;
-import lombok.experimental.Accessors;
-import lombok.extern.log4j.Log4j2;
-import org.geojson.GeoJsonObject;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -28,8 +19,16 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.sinergise.sentinel.byoctool.sentinelhub.Constants.BAND_PLACEHOLDER;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.Value;
+import lombok.experimental.Accessors;
+import lombok.extern.log4j.Log4j2;
+import org.geojson.GeoJsonObject;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 @Log4j2
 @Accessors(chain = true)
@@ -41,9 +40,7 @@ public class ByocIngestor {
 
   @Setter private CogFactory cogFactory;
 
-  @Setter
-  @Getter
-  private ExecutorService executorService;
+  @Setter @Getter private ExecutorService executorService;
 
   @Setter private S3ClientBuilder s3ClientBuilder;
 

@@ -2,9 +2,9 @@ package com.sinergise.sentinel.byoctool.sentinelhub;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import org.junit.jupiter.api.Test;
 
 class ByocServiceTest {

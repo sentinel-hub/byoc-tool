@@ -8,7 +8,6 @@ import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
-
 import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;

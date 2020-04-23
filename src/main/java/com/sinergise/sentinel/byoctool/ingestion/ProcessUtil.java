@@ -16,7 +16,8 @@ public class ProcessUtil {
       Process process = pb.start();
 
       final String stdOut;
-      try (BufferedReader rdr = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+      try (BufferedReader rdr =
+          new BufferedReader(new InputStreamReader(process.getInputStream()))) {
         stdOut = rdr.lines().collect(Collectors.joining(System.lineSeparator()));
       }
 

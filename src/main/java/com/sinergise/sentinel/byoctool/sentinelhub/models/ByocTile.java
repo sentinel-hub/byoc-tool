@@ -6,14 +6,13 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sinergise.sentinel.byoctool.sentinelhub.Constants;
 import com.sinergise.sentinel.byoctool.utils.JtsUtils;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.geojson.GeoJsonObject;
 import org.locationtech.jts.geom.Geometry;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @Getter
 @Setter

@@ -7,11 +7,6 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.GdalInfo.Band;
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.SampleFormat;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +15,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 @Setter
 @Accessors(chain = true)
@@ -35,7 +34,8 @@ public class CogFactory {
 
     try {
       GdalInfo gdalInfo = getGdalInfo(inputFile);
-      String dataType = gdalInfo.getBands().stream()
+      String dataType =
+          gdalInfo.getBands().stream()
               .filter(band -> bandMap.index() == band.getBand())
               .findFirst()
               .map(Band::getType)
@@ -121,13 +121,16 @@ public class CogFactory {
   }
 
   private static void addOverviews(Path inputPath, int[] overviewLevels) {
-    List<String> cmd = new LinkedList<>(Arrays.asList(  "gdaladdo",
-            "-r",
-            "average",
-            "--config",
-            "GDAL_TIFF_OVR_BLOCKSIZE",
-            "1024",
-            inputPath.toAbsolutePath().toString()));
+    List<String> cmd =
+        new LinkedList<>(
+            Arrays.asList(
+                "gdaladdo",
+                "-r",
+                "average",
+                "--config",
+                "GDAL_TIFF_OVR_BLOCKSIZE",
+                "1024",
+                inputPath.toAbsolutePath().toString()));
 
     if (overviewLevels == null) {
       cmd.addAll(Arrays.asList("-minsize", "1024"));

@@ -2,7 +2,6 @@ package com.sinergise.sentinel.byoctool.cli;
 
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.BandMap;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
-
 import java.util.*;
 import java.util.regex.Pattern;
 
