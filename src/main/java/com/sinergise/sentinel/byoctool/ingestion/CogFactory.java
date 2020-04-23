@@ -96,7 +96,8 @@ public class CogFactory {
   }
 
   private GdalInfo getGdalInfo(Path inputFile) throws JsonProcessingException {
-    String output = ProcessUtil.runCommand("gdalinfo", "-json", inputFile.toString());
+    ProcessBuilder pb = new ProcessBuilder("gdalinfo", "-json", inputFile.toString());
+    String output = ProcessUtil.runCommand(pb);
     return new ObjectMapper().readValue(output, GdalInfo.class);
   }
 

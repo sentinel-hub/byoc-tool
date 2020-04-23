@@ -7,12 +7,14 @@ import java.util.stream.Collectors;
 public class ProcessUtil {
 
   public static String runCommand(String... args) {
-    return runCommand(new ProcessBuilder(args));
+    ProcessBuilder pb = new ProcessBuilder(args);
+    pb.redirectErrorStream(true);
+
+    return runCommand(pb);
   }
 
   public static String runCommand(ProcessBuilder pb) {
     try {
-      pb.redirectErrorStream(true);
       Process process = pb.start();
 
       final String stdOut;
