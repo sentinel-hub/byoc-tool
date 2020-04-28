@@ -1,0 +1,27 @@
+image: java:8-jdk
+
+stages:
+  - build
+  - test
+  - publish
+
+build:
+  stage: build
+  script:
+    - ./gradlew shadowJar
+  artifacts:
+    paths:
+      - build/libs/*.jar
+    expire_in: 1 week
+  only:
+    - master
+
+test:
+  stage: test
+  script:
+    - ./gradlew test
+
+publish:
+  stage: publish
+  script:
+    - ./gradlew publish

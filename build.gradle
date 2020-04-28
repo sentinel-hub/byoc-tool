@@ -136,5 +136,15 @@ publishing {
             }
         }
     }
+
+    repositories {
+        maven {
+            credentials {
+                username System.getenv('artifactoryUser')
+                password System.getenv('artifactoryPassword')
+            }
+            url "${System.getenv('artifactoryUrl')}/libs-custom-local"
+        }
+    }
 }
 
