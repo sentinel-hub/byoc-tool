@@ -1,4 +1,4 @@
-image: java:8-jdk
+image: sentinelhub/gdal-jdk:gdal3-jdk8
 
 stages:
   - build

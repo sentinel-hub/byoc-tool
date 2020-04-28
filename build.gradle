@@ -122,6 +122,11 @@ task jpackage(type: Exec, dependsOn: shadowJar) {
     ]
 }
 
+distTar {
+    archiveName "byoc-tool.tar"
+}
+
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
