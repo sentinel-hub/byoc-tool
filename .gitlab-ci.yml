@@ -5,16 +5,22 @@ stages:
   - test
   - publish
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .gradle/wrapper
+    - .gradle/caches
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
 build:
   stage: build
   script:
-    - ./gradlew shadowJar
-  artifacts:
-    paths:
-      - build/libs/*.jar
-    expire_in: 1 week
-  only:
-    - master
+    - ./gradlew assemble
 
 test:
   stage: test
@@ -25,3 +31,5 @@ publish:
   stage: publish
   script:
     - ./gradlew publish
+  only:
+    - master
