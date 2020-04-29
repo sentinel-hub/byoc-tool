@@ -15,6 +15,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
+
+import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -26,6 +28,7 @@ import picocli.CommandLine.ParentCommand;
     description =
         "Ingest files. It prepares Cloud Optimized GeoTIFFs, uploads them to S3 and creates tiles in the BYOC service.",
     sortOptions = false)
+@Log4j2
 public class IngestCmd implements Runnable {
 
   static final String DEFAULT_FILE_PATTERN =
@@ -153,11 +156,10 @@ public class IngestCmd implements Runnable {
     try {
       ingestor.ingest(collectionId, tiles);
     } catch (TileIngestionException e) {
-      System.err.println(e.getMessage());
-      e.getErrors().forEach(System.err::println);
+      log.error(e.getMessage() + " " + String.join(" ", e.getErrors()));
+    } catch (RuntimeException e) {
+      log.error("Failed to ingest tiles.", e);
     }
-
-    System.out.println("Finished.");
 
     ingestor.getExecutorService().shutdown();
   }

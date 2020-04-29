@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="info">
+<Configuration status="INFO">
+    <Properties>
+        <property name="appenderPatternLayout">%highlight{%d %-5level: %msg%n%throwable}</property>
+    </Properties>
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{ISO8601} - %msg%n"/>
+        <Console name="stdout" target="SYSTEM_OUT">
+            <PatternLayout pattern="${appenderPatternLayout}" />
+        </Console>
+        <Console name="stderr" target="SYSTEM_ERR">
+            <PatternLayout pattern="${appenderPatternLayout}" />
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.sinergise.sentinel.byoctool" level="trace" additivity="false">
-            <AppenderRef ref="Console"/>
+        <Logger name="com.sinergise.sentinel.byoctool" level="INFO" additivity="false">
+            <AppenderRef ref="stdout"/>
         </Logger>
-        <Root level="error">
-            <AppenderRef ref="Console"/>
+        <Root level="ERROR">
+            <AppenderRef ref="stderr"/>
         </Root>
     </Loggers>
 </Configuration>

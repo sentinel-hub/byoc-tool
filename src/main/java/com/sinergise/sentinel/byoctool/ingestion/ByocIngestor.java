@@ -225,12 +225,12 @@ public class ByocIngestor {
   }
 
   @Getter
-  public class TileIngestionException extends RuntimeException {
+  public static class TileIngestionException extends RuntimeException {
 
     private final Collection<String> errors;
 
     TileIngestionException(Tile tile, Collection<String> errors) {
-      super("Failed to ingest tile with path " + tile.path());
+      super(String.format("Failed to ingest tile with path %s.", tile.path()));
       this.errors = errors;
     }
   }
