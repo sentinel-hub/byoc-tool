@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
     id 'application'
     id 'com.diffplug.gradle.spotless' version '3.26.0'
     id 'idea'
@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.sinergise.sentinel'
-version = '0.2.0'
+version = '0.2.1-SNAPSHOT'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -54,7 +54,7 @@ dependencies {
 
     implementation "info.picocli:picocli:4.0.4"
     implementation "org.locationtech.jts:jts-core:1.16.1"
-    implementation "software.amazon.awssdk:s3:2.10.8"
+    api "software.amazon.awssdk:s3:2.10.8"
     implementation "com.twelvemonkeys.imageio:imageio-tiff:3.4.2"
     implementation "org.wololo:jts2geojson:0.14.3"
     implementation "de.grundid.opendatalab:geojson-jackson:1.12"
@@ -71,7 +71,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 
     // logging
-    implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    api "org.apache.logging.log4j:log4j-api:$log4jVersion"
     implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
 
     // required with newer JDKs
