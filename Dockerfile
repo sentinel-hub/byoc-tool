@@ -1,4 +1,6 @@
-FROM sentinelhub/gdal-jdk:gdal3-jdk8 AS build
+FROM osgeo/gdal:alpine-small-3.0.2
+
+RUN apk add --no-cache openjdk8
 
 ADD . .
 
