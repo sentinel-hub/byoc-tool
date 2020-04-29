@@ -1,4 +1,4 @@
-FROM osgeo/gdal:alpine-small-3.0.2
+FROM osgeo/gdal:alpine-small-3.0.2 AS build
 
 RUN apk add --no-cache openjdk8
 
