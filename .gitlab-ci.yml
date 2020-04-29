@@ -24,4 +24,4 @@ test:
 publish:
   stage: publish
   script:
-    - ./gradlew --debug publish
+    - ./gradlew publish
