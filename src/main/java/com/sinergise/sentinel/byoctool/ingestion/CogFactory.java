@@ -92,7 +92,7 @@ public class CogFactory {
   }
 
   private String getTilePathWithUnderscores(Tile tile) {
-    return tile.path().replace(File.separatorChar, '_');
+    return tile.path().replace('/', '_');
   }
 
   private GdalInfo getGdalInfo(Path inputFile) throws JsonProcessingException {
