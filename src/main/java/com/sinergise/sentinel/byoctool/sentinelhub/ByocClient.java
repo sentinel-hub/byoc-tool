@@ -35,7 +35,7 @@ public class ByocClient {
   private static final String BYOC_SERVICE_BASE_URL;
 
   private static final String DEFAULT_BYOC_SERVICE_BASE_URL =
-      "https://services.sentinel-hub.com/byoc";
+      "https://services.sentinel-hub.com/api/v1/byoc";
 
   private static final String USER_AGENT = "byoc-tool/v" + ByocTool.VERSION;
 
