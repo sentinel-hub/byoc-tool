@@ -35,7 +35,8 @@ class CogFactoryTest {
     Path inputFile = Paths.get(getClass().getResource("input.tiff").toURI());
     Path expectedCog = Paths.get(getClass().getResource(expectedCogName).toURI());
 
-    Path actualCog = new CogFactory().createCog(null, inputFile, new BandMap(bandIndex, bandName));
+    BandMap bandMap = new BandMap(bandIndex, bandName).setMinSize(1024);
+    Path actualCog = new CogFactory().createCog(null, inputFile, bandMap);
 
     assertArrayEquals(Files.readAllBytes(expectedCog), Files.readAllBytes(actualCog));
   }

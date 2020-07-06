@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import lombok.Setter;
@@ -41,7 +42,7 @@ public class CogFactory {
               .orElse(null);
 
       createGeoTiff(inputFile, bandMap.index(), noDataValue, dataType, intermediateFile);
-      addOverviews(intermediateFile, bandMap.overviewLevels());
+      addOverviews(intermediateFile, bandMap);
       addTiling(intermediateFile, useCompressionPredictor, outputFile);
 
       return outputFile;
@@ -120,7 +121,7 @@ public class CogFactory {
     ProcessUtil.runCommand(command.toArray(new String[0]));
   }
 
-  private static void addOverviews(Path inputPath, int[] overviewLevels) {
+  private static void addOverviews(Path inputPath, BandMap bandMap) {
     List<String> cmd =
         new LinkedList<>(
             Arrays.asList(
@@ -132,12 +133,13 @@ public class CogFactory {
                 "1024",
                 inputPath.toAbsolutePath().toString()));
 
-    if (overviewLevels == null) {
-      cmd.addAll(Arrays.asList("-minsize", "1024"));
-    } else {
-      for (double level : overviewLevels) {
+    if (bandMap.overviewLevels() != null) {
+      for (double level : bandMap.overviewLevels()) {
         cmd.add(String.valueOf(level));
       }
+    } else {
+      Integer minSize = Optional.ofNullable(bandMap.minSize()).orElse(512);
+      cmd.addAll(Arrays.asList("-minsize", minSize.toString()));
     }
 
     ProcessUtil.runCommand(cmd.toArray(new String[0]));
