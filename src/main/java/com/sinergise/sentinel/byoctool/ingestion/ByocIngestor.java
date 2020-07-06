@@ -211,9 +211,16 @@ public class ByocIngestor {
     private final int index;
     private final String name;
     private int[] overviewLevels;
+    private Integer minSize;
 
     public BandMap setOverviewLevels(int[] levels) {
-      overviewLevels = levels;
+      Objects.requireNonNull(levels);
+      this.overviewLevels = levels;
+      return this;
+    }
+
+    public BandMap setMinSize(int minSize) {
+      this.minSize = minSize;
       return this;
     }
   }
