@@ -23,7 +23,7 @@ class PagingTileIterator implements Iterator<ByocTile> {
   }
 
   private URI getFirstPageUri() {
-    return byocClient.getWebTarget().path("collections").path(collectionId).path("tiles").getUri();
+    return byocClient.getByocTarget().path("collections").path(collectionId).path("tiles").getUri();
   }
 
   private void fetchPage(URI uri) {

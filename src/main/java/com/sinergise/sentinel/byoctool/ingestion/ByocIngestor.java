@@ -37,6 +37,7 @@ public class ByocIngestor {
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
 
   private final ByocClient byocClient;
+  private final Region s3Region;
 
   @Setter private CogFactory cogFactory;
 
@@ -48,8 +49,9 @@ public class ByocIngestor {
 
   @Setter private Consumer<Tile> tileIngestedCallback;
 
-  public ByocIngestor(ByocClient byocClient) {
+  public ByocIngestor(ByocClient byocClient, Region s3Region) {
     this.byocClient = byocClient;
+    this.s3Region = s3Region;
     this.cogFactory = new CogFactory();
     this.executorService = Executors.newFixedThreadPool(1);
     this.s3ClientBuilder = S3Client.builder();
@@ -64,8 +66,7 @@ public class ByocIngestor {
     }
 
     Set<String> existingTiles = byocClient.getTilePaths(collectionId);
-    Region s3Region = byocClient.getCollectionS3Region(collectionId);
-    S3Client s3 = s3ClientBuilder.region(s3Region).build();
+    S3Client s3Client = s3ClientBuilder.region(s3Region).build();
 
     for (Tile tile : tiles) {
       if (doesTileExist(existingTiles, tile)) {
@@ -73,7 +74,7 @@ public class ByocIngestor {
         continue;
       }
 
-      futures.add(executorService.submit(() -> ingestTile(collection, tile, s3)));
+      futures.add(executorService.submit(() -> ingestTile(collection, tile, s3Client)));
     }
 
     List<String> createdTiles = new LinkedList<>();
@@ -91,7 +92,7 @@ public class ByocIngestor {
       }
     }
 
-    s3.close();
+    s3Client.close();
 
     return createdTiles;
   }
@@ -105,7 +106,8 @@ public class ByocIngestor {
     return optional.isPresent();
   }
 
-  private String ingestTile(ByocCollection collection, Tile tile, S3Client s3) throws IOException {
+  private String ingestTile(ByocCollection collection, Tile tile, S3Client s3Client)
+      throws IOException {
     List<Path> tiffFiles = findTiffFiles(tile);
 
     if (!tiffFiles.isEmpty()) {
@@ -152,7 +154,7 @@ public class ByocIngestor {
 
       String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
       log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
-      S3Upload.uploadWithRetry(s3, collection.getS3Bucket(), s3Key, cogPath);
+      S3Upload.uploadWithRetry(s3Client, collection.getS3Bucket(), s3Key, cogPath);
     }
 
     ByocTile byocTile = new ByocTile();

@@ -1,6 +1,8 @@
-package com.sinergise.sentinel.byoctool;
+package com.sinergise.sentinel.byoctool.custom;
 
-class Sentinel2Test {
+import com.sinergise.sentinel.byoctool.ByocTool;
+
+class IngestTest {
 
   public static void main(String[] args) {
     ByocTool.main(
@@ -10,11 +12,11 @@ class Sentinel2Test {
         "--file-map=B02;1:B02",
         //                "--file-map=B03;1:B03",
         //                "--file-map=B04;1:B04",
-        "--trace-coverage",
+        //        "--trace-coverage",
         "--no-data=0",
-        "--distance-tolerance=10",
+        //        "--distance-tolerance=10",
         "--num-threads=4",
-        "f26e2d5b-a894-4164-9c15-c01321cbca35",
+        "e0f19e2f-e7fe-4c11-92c6-bd6fc957643d",
         "C:\\Users\\tslijepcevic\\data\\byoc workshop\\sentinel2");
   }
 }

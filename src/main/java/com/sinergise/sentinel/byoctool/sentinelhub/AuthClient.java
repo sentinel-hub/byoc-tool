@@ -53,7 +53,10 @@ public class AuthClient {
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
     jsonProvider.setMapper(objectMapper);
 
-    httpClient = ClientBuilder.newClient(new ClientConfig().register(jsonProvider));
+    ClientConfig clientConfig =
+        new ClientConfig().register(jsonProvider).register(new UserAgentRequestFilter());
+
+    httpClient = ClientBuilder.newClient(clientConfig);
 
     formData = new MultivaluedHashMap<>();
     formData.add("grant_type", "client_credentials");

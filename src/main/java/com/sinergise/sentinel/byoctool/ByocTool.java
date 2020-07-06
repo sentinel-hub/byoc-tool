@@ -4,7 +4,6 @@ import com.sinergise.sentinel.byoctool.cli.IngestCmd;
 import com.sinergise.sentinel.byoctool.cli.ListTilesCmd;
 import com.sinergise.sentinel.byoctool.cli.SetCoverageCmd;
 import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
-import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine;
 import picocli.CommandLine.*;
@@ -26,9 +25,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "v0.2.3";
-
-  private ByocClient byocClient;
+  public static final String VERSION = "v0.2.4";
 
   @ArgGroup(exclusive = false)
   private AuthCredentials authCredentials;
@@ -69,15 +66,7 @@ public class ByocTool implements Runnable {
   @Override
   public void run() {}
 
-  public ByocClient newByocClient() {
-    if (byocClient == null) {
-      byocClient = new ByocClient(newAuthClient());
-    }
-
-    return byocClient;
-  }
-
-  private AuthClient newAuthClient() {
+  public AuthClient newAuthClient() {
     if (authCredentials != null) {
       return new AuthClient(authCredentials.clientId, authCredentials.clientSecret);
     } else {

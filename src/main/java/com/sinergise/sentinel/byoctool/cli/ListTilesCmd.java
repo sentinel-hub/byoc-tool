@@ -1,6 +1,10 @@
 package com.sinergise.sentinel.byoctool.cli;
 
 import com.sinergise.sentinel.byoctool.ByocTool;
+import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocInfoClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import java.util.Iterator;
 import picocli.CommandLine.Command;
@@ -17,9 +21,18 @@ public class ListTilesCmd implements Runnable {
 
   @Override
   public void run() {
-    Iterator<ByocTile> iter = parent.newByocClient().getTileIterator(collectionId);
-    while (iter.hasNext()) {
-      ByocTile tile = iter.next();
+    AuthClient authClient = parent.newAuthClient();
+
+    ByocCollectionInfo collectionInfo =
+        new ByocInfoClient(authClient)
+            .getCollectionInfo(collectionId)
+            .orElseThrow(() -> new RuntimeException("Collection not found."));
+
+    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getLocation());
+
+    Iterator<ByocTile> it = byocClient.getTileIterator(collectionId);
+    while (it.hasNext()) {
+      ByocTile tile = it.next();
 
       System.out.println(tile.idWithPath());
     }

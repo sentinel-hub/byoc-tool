@@ -7,6 +7,10 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.TileIngestionExcep
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
+import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocInfoClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -139,8 +143,15 @@ public class IngestCmd implements Runnable {
       }
     }
 
+    AuthClient authClient = parent.newAuthClient();
+    ByocCollectionInfo collectionInfo =
+        new ByocInfoClient(authClient)
+            .getCollectionInfo(collectionId)
+            .orElseThrow(() -> new RuntimeException("Collection doesn't exist."));
+    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getLocation());
+
     ByocIngestor ingestor =
-        new ByocIngestor(parent.newByocClient())
+        new ByocIngestor(byocClient, collectionInfo.getS3Region())
             .setCogFactory(
                 new CogFactory()
                     .setNoDataValue(noDataValue)

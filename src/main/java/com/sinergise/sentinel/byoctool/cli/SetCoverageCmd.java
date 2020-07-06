@@ -2,8 +2,11 @@ package com.sinergise.sentinel.byoctool.cli;
 
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
+import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocInfoClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +44,13 @@ public class SetCoverageCmd implements Runnable {
 
   @Override
   public void run() {
-    ByocClient byocClient = parent.newByocClient();
+    AuthClient authClient = parent.newAuthClient();
+    ByocCollectionInfo collectionInfo =
+        new ByocInfoClient(authClient)
+            .getCollectionInfo(collectionId)
+            .orElseThrow(() -> new RuntimeException("Collection doesn't exist."));
+    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getLocation());
+
     ByocTile tile = byocClient.getTile(collectionId, tileId);
     log.info("Processing tile {}", tile.idWithPath());
 
@@ -56,8 +65,8 @@ public class SetCoverageCmd implements Runnable {
           throw new RuntimeException("Collection does not exist.");
         }
 
-        S3Client s3 = parent.newS3Client(byocClient.getCollectionS3Region(collectionId));
-        processTileBands(collection, tile, s3, coverageCalculator);
+        S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
+        processTileBands(collection, tile, s3Client, coverageCalculator);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

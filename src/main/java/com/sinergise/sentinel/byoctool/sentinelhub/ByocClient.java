@@ -1,102 +1,75 @@
 package com.sinergise.sentinel.byoctool.sentinelhub;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.*;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
-import software.amazon.awssdk.regions.Region;
 
 public class ByocClient {
 
-  private static final String BYOC_SERVICE_BASE_URL;
-
-  private static final String DEFAULT_BYOC_SERVICE_BASE_URL =
-      "https://services.sentinel-hub.com/api/v1/byoc";
-
-  private static final String USER_AGENT = "byoc-tool/v" + ByocTool.VERSION;
-
-  static {
-    BYOC_SERVICE_BASE_URL =
-        Optional.ofNullable(System.getenv("BYOC_SERVICE_BASE_URL"))
-            .orElse(DEFAULT_BYOC_SERVICE_BASE_URL);
-  }
-
-  private final WebTarget webTarget;
   private final Client httpClient;
+  private final WebTarget byocTarget;
 
-  public ByocClient() {
-    this(new AuthClient());
+  public ByocClient(AuthClient authClient, String locationId) {
+    this(authClient::accessToken, locationId);
   }
 
-  public ByocClient(AuthClient authClient) {
-    this(authClient::accessToken);
-  }
-
-  public ByocClient(Supplier<String> accessTokenSupplier) {
+  public ByocClient(Supplier<String> accessTokenSupplier, String locationId) {
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
-    jsonProvider.setMapper(newObjectMapper());
+    jsonProvider.setMapper(ObjectMapperFactory.newObjectMapper());
 
-    ClientConfig clientConfig = new ClientConfig();
-    clientConfig.register(jsonProvider);
-
-    clientConfig.register(
-        (ClientRequestFilter)
-            requestContext ->
-                requestContext
-                    .getHeaders()
-                    .add("Authorization", "Bearer " + accessTokenSupplier.get()));
-
-    clientConfig.register(
-        (ClientRequestFilter)
-            requestContext -> requestContext.getHeaders().add(HttpHeaders.USER_AGENT, USER_AGENT));
+    ClientConfig clientConfig =
+        new ClientConfig()
+            .register(jsonProvider)
+            .register(new AddTokenRequestFilter(accessTokenSupplier))
+            .register(new UserAgentRequestFilter());
+    Client httpClient = ClientBuilder.newClient(clientConfig);
 
     this.httpClient = ClientBuilder.newClient(clientConfig);
-    this.webTarget = httpClient.target(BYOC_SERVICE_BASE_URL);
+    this.byocTarget = httpClient.target(getServiceUrl(locationId));
   }
 
-  static ObjectMapper newObjectMapper() {
-    return new ObjectMapper()
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .setSerializationInclusion(Include.NON_NULL)
-        .registerModule(new Jdk8Module())
-        .registerModule(new JavaTimeModule());
+  private String getServiceUrl(String locationId) {
+    final String serviceUrl;
+
+    switch (locationId) {
+      case "aws-eu-central-1":
+        serviceUrl = "https://services.sentinel-hub.com/api/v1/byoc";
+        break;
+      case "aws-us-west-2":
+        serviceUrl = "https://services-uswest2.sentinel-hub.com/api/v1/byoc";
+        break;
+      default:
+        throw new RuntimeException("Unexpected location " + locationId);
+    }
+
+    return serviceUrl;
   }
 
   Client getHttpClient() {
     return httpClient;
   }
 
-  WebTarget getWebTarget() {
-    return webTarget;
+  WebTarget getByocTarget() {
+    return byocTarget;
   }
 
   public ByocCollection getCollection(String collectionId) {
-    Response response = webTarget.path("collections").path(collectionId).request().get();
+    Response response = byocTarget.path("collections").path(collectionId).request().get();
 
     if (response.getStatus() == 200) {
       return response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {}).getData();
@@ -106,22 +79,6 @@ public class ByocClient {
       ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {});
       throw new RuntimeException(shResponse.getError().getMessage());
     }
-  }
-
-  public Region getCollectionS3Region(String collectionId) {
-    Response response = webTarget.path("global").queryParam("ids", collectionId).request().get();
-
-    ResponseUtils.ensureStatus(response, 200);
-
-    String location =
-        (String)
-            response
-                .readEntity(new GenericType<ByocResponse<List<Map<String, Object>>>>() {})
-                .getData()
-                .get(0)
-                .get("location");
-
-    return toS3Region(location);
   }
 
   public ByocTile getTile(String collectionId, String tileId) {
@@ -149,7 +106,7 @@ public class ByocClient {
 
   public UUID createCollection(ByocCollection collection) {
     Response response =
-        webTarget
+        byocTarget
             .path("collections")
             .request()
             .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
@@ -189,27 +146,10 @@ public class ByocClient {
   }
 
   private WebTarget collectionTarget(String collectionId) {
-    return webTarget.path("collections").path(collectionId);
+    return byocTarget.path("collections").path(collectionId);
   }
 
   private WebTarget tilesTarget(String collectionId) {
     return collectionTarget(collectionId).path("tiles");
-  }
-
-  private Region toS3Region(String location) {
-    Region region;
-    switch (location) {
-      case "aws-eu-central-1":
-      case "sgs-hq":
-        region = Region.EU_CENTRAL_1;
-        break;
-      case "aws-us-west-2":
-        region = Region.US_EAST_2;
-        break;
-      default:
-        throw new RuntimeException("Unexpected location " + location);
-    }
-
-    return region;
   }
 }
