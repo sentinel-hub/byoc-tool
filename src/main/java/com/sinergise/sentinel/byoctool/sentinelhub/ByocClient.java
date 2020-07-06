@@ -7,8 +7,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.Common.Response;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +22,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.*;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -57,10 +58,8 @@ public class ByocClient {
   }
 
   public ByocClient(Supplier<String> accessTokenSupplier) {
-    ObjectMapper objectMapper = newObjectMapper();
-
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
-    jsonProvider.setMapper(objectMapper);
+    jsonProvider.setMapper(newObjectMapper());
 
     ClientConfig clientConfig = new ClientConfig();
     clientConfig.register(jsonProvider);
@@ -81,14 +80,11 @@ public class ByocClient {
   }
 
   static ObjectMapper newObjectMapper() {
-    ObjectMapper objectMapper;
-    objectMapper = new ObjectMapper();
-    objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-    objectMapper.setSerializationInclusion(Include.NON_NULL);
-    objectMapper.registerModule(new Jdk8Module());
-    objectMapper.registerModule(new JavaTimeModule());
-
-    return objectMapper;
+    return new ObjectMapper()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .setSerializationInclusion(Include.NON_NULL)
+        .registerModule(new Jdk8Module())
+        .registerModule(new JavaTimeModule());
   }
 
   Client getHttpClient() {
@@ -100,29 +96,27 @@ public class ByocClient {
   }
 
   public ByocCollection getCollection(String collectionId) {
-    javax.ws.rs.core.Response response =
-        webTarget.path("collections").path(collectionId).request().get();
+    Response response = webTarget.path("collections").path(collectionId).request().get();
 
     if (response.getStatus() == 200) {
-      return response.readEntity(new GenericType<Response<ByocCollection>>() {}).getData();
+      return response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {}).getData();
     } else if (response.getStatus() == 404) {
       return null;
     } else {
-      Response shResponse = response.readEntity(new GenericType<Response>() {});
+      ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {});
       throw new RuntimeException(shResponse.getError().getMessage());
     }
   }
 
   public Region getCollectionS3Region(String collectionId) {
-    javax.ws.rs.core.Response response =
-        webTarget.path("global").queryParam("ids", collectionId).request().get();
+    Response response = webTarget.path("global").queryParam("ids", collectionId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
 
     String location =
         (String)
             response
-                .readEntity(new GenericType<Response<List<Map<String, Object>>>>() {})
+                .readEntity(new GenericType<ByocResponse<List<Map<String, Object>>>>() {})
                 .getData()
                 .get(0)
                 .get("location");
@@ -131,11 +125,11 @@ public class ByocClient {
   }
 
   public ByocTile getTile(String collectionId, String tileId) {
-    javax.ws.rs.core.Response response = tileTarget(collectionId, tileId).request().get();
+    Response response = tileTarget(collectionId, tileId).request().get();
 
     ResponseUtils.ensureStatus(response, 200);
 
-    return response.readEntity(new GenericType<Response<ByocTile>>() {}).getData();
+    return response.readEntity(new GenericType<ByocResponse<ByocTile>>() {}).getData();
   }
 
   public Iterator<ByocTile> getTileIterator(String collectionId) {
@@ -154,7 +148,7 @@ public class ByocClient {
   }
 
   public UUID createCollection(ByocCollection collection) {
-    javax.ws.rs.core.Response response =
+    Response response =
         webTarget
             .path("collections")
             .request()
@@ -162,26 +156,27 @@ public class ByocClient {
 
     ResponseUtils.ensureStatus(response, 201);
 
-    Response<ByocCollection> entity =
-        response.readEntity(new GenericType<Response<ByocCollection>>() {});
+    ByocResponse<ByocCollection> entity =
+        response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {});
     return UUID.fromString(entity.getData().getId());
   }
 
   public String createTile(String collectionId, ByocTile tile) {
-    javax.ws.rs.core.Response response =
+    Response response =
         tilesTarget(collectionId)
             .request()
             .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));
 
     ResponseUtils.ensureStatus(response, 201);
 
-    ByocTile returnedTile = response.readEntity(new GenericType<Response<ByocTile>>() {}).getData();
+    ByocTile returnedTile =
+        response.readEntity(new GenericType<ByocResponse<ByocTile>>() {}).getData();
 
     return returnedTile.getId();
   }
 
   public void updateTile(String collectionId, ByocTile tile) {
-    javax.ws.rs.core.Response response =
+    Response response =
         tileTarget(collectionId, tile.getId())
             .request()
             .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));

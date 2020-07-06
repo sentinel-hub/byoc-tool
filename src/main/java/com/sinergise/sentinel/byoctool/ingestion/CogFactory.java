@@ -7,7 +7,6 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.GdalInfo.Band;
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.SampleFormat;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;

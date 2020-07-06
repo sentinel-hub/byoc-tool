@@ -1,7 +1,7 @@
 package com.sinergise.sentinel.byoctool.sentinelhub;
 
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocPage;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.Common.Page;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
@@ -28,7 +28,7 @@ class PagingTileIterator implements Iterator<ByocTile> {
 
   private void fetchPage(URI uri) {
     Response response = byocClient.getHttpClient().target(uri).request().get();
-    Page<ByocTile> page = response.readEntity(new GenericType<Page<ByocTile>>() {});
+    ByocPage<ByocTile> page = response.readEntity(new GenericType<ByocPage<ByocTile>>() {});
     tiles = page.getData();
     nextUri = page.getLinks().getNext();
   }

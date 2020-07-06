@@ -16,7 +16,7 @@ import org.locationtech.jts.geom.Geometry;
 
 @Getter
 @Setter
-public class ByocTile implements Common.NoJsonAutoDetect {
+public class ByocTile implements NoJsonAutoDetect {
 
   @JsonProperty("id")
   private String id;

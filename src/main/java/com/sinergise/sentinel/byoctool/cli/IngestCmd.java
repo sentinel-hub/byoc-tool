@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;

@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ByocCollection implements Common.NoJsonAutoDetect {
+public class ByocCollection implements NoJsonAutoDetect {
 
   @JsonProperty("id")
   private String id;
