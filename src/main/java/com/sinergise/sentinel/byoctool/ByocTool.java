@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "v0.2.4";
+  public static final String VERSION = "v0.2.5-SNAPSHOT";
 
   @ArgGroup(exclusive = false)
   private AuthCredentials authCredentials;

@@ -1,24 +1,10 @@
 package com.sinergise.sentinel.byoctool.ingestion;
 
-import static com.sinergise.sentinel.byoctool.sentinelhub.Constants.BAND_PLACEHOLDER;
-
 import com.sinergise.sentinel.byoctool.cli.CoverageParams;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -26,9 +12,18 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
 import org.geojson.GeoJsonObject;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static com.sinergise.sentinel.byoctool.sentinelhub.Constants.BAND_PLACEHOLDER;
 
 @Log4j2
 @Accessors(chain = true)
@@ -37,59 +32,57 @@ public class ByocIngestor {
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
 
   private final ByocClient byocClient;
-  private final Region s3Region;
+
+  private final S3Client s3Client;
 
   @Setter private CogFactory cogFactory;
 
   @Setter @Getter private ExecutorService executorService;
 
-  @Setter private S3ClientBuilder s3ClientBuilder;
-
   @Setter private CoverageParams coverageParams;
+
+  @Setter private Consumer<Tile> tileStartCallback;
 
   @Setter private Consumer<Tile> tileIngestedCallback;
 
-  public ByocIngestor(ByocClient byocClient, Region s3Region) {
+  public ByocIngestor(ByocClient byocClient, S3Client s3Client) {
     this.byocClient = byocClient;
-    this.s3Region = s3Region;
+    this.s3Client = s3Client;
     this.cogFactory = new CogFactory();
-    this.executorService = Executors.newFixedThreadPool(1);
-    this.s3ClientBuilder = S3Client.builder();
+    this.executorService = Executors.newSingleThreadExecutor();
   }
 
   public Collection<String> ingest(String collectionId, Collection<Tile> tiles) {
-    List<Future<String>> futures = new ArrayList<>();
-
     ByocCollection collection = byocClient.getCollection(collectionId);
     if (collection == null) {
       throw new RuntimeException("Collection does not exist.");
     }
 
-    Set<String> existingTiles = byocClient.getTilePaths(collectionId);
-    S3Client s3Client = s3ClientBuilder.region(s3Region).build();
+    Collection<Tile> uningestedTiles = getUningestedTiles(collection, tiles);
 
-    for (Tile tile : tiles) {
-      if (doesTileExist(existingTiles, tile)) {
-        System.out.println(String.format("Skipping tile \"%s\" because it exists", tile.path()));
-        continue;
-      }
+    CompletionService<String> completionService = new ExecutorCompletionService<>(executorService);
 
-      futures.add(executorService.submit(() -> ingestTile(collection, tile, s3Client)));
+    List<Future<?>> futures = new LinkedList<>();
+    for (Tile tile : uningestedTiles) {
+      futures.add(completionService.submit(() -> ingestTile(collection, tile, s3Client)));
     }
 
     List<String> createdTiles = new LinkedList<>();
 
-    for (Future<String> future : futures) {
-      try {
-        createdTiles.add(future.get());
-      } catch (ExecutionException e) {
-        if (e.getCause() instanceof TileIngestionException) {
-          throw (TileIngestionException) e.getCause();
-        }
-        throw new RuntimeException(e);
-      } catch (InterruptedException e) {
+    try {
+      for (int i = 0; i < futures.size(); i++) {
+          createdTiles.add(completionService.take().get());
+      }
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof TileIngestionException) {
+        throw (TileIngestionException) e.getCause();
+      } else {
         throw new RuntimeException(e);
       }
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    } finally {
+      futures.forEach(f -> f.cancel(true));
     }
 
     s3Client.close();
@@ -97,17 +90,32 @@ public class ByocIngestor {
     return createdTiles;
   }
 
-  private boolean doesTileExist(Set<String> existingTiles, Tile tile) {
-    Optional<String> optional =
-        Stream.of(tile.path(), String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER))
-            .filter(existingTiles::contains)
-            .findFirst();
+  private Collection<Tile> getUningestedTiles(ByocCollection collection, Collection<Tile> tiles) {
+    Collection<Tile> uningestedTiles = new LinkedList<>();
+    Set<String> ingestedPaths = byocClient.getTilePaths(collection.getId());
 
-    return optional.isPresent();
+    for (Tile tile : tiles) {
+      String pathWithPlaceholder = String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER);
+      String[] pathsToCheck = {tile.path(), pathWithPlaceholder};
+      boolean pathExist = Arrays.stream(pathsToCheck).anyMatch(ingestedPaths::contains);
+
+      if (pathExist) {
+        System.out.println(String.format("Skipping tile \"%s\" because it exists", tile.path()));
+      } else {
+        uningestedTiles.add(tile);
+      }
+    }
+
+    return uningestedTiles;
   }
 
   private String ingestTile(ByocCollection collection, Tile tile, S3Client s3Client)
       throws IOException {
+
+    if (tileStartCallback != null) {
+      tileStartCallback.accept(tile);
+    }
+
     List<Path> tiffFiles = findTiffFiles(tile);
 
     if (!tiffFiles.isEmpty()) {

@@ -28,7 +28,7 @@ public class ListTilesCmd implements Runnable {
             .getCollectionInfo(collectionId)
             .orElseThrow(() -> new RuntimeException("Collection not found."));
 
-    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getLocation());
+    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getDeployment());
 
     Iterator<ByocTile> it = byocClient.getTileIterator(collectionId);
     while (it.hasNext()) {

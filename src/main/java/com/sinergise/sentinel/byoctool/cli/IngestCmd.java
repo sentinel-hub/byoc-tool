@@ -25,6 +25,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Command(
     name = "ingest",
@@ -144,14 +145,18 @@ public class IngestCmd implements Runnable {
     }
 
     AuthClient authClient = parent.newAuthClient();
+
     ByocCollectionInfo collectionInfo =
         new ByocInfoClient(authClient)
             .getCollectionInfo(collectionId)
             .orElseThrow(() -> new RuntimeException("Collection doesn't exist."));
-    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getLocation());
+
+    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getDeployment());
+
+    S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
 
     ByocIngestor ingestor =
-        new ByocIngestor(byocClient, collectionInfo.getS3Region())
+        new ByocIngestor(byocClient, s3Client)
             .setCogFactory(
                 new CogFactory()
                     .setNoDataValue(noDataValue)

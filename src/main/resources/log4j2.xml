@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="INFO">
     <Properties>
-        <property name="appenderPatternLayout">%highlight{%d %-5level: %msg%n%throwable}</property>
+        <property name="appenderPatternLayout">%highlight{%d %-5level [%t]: %msg%n%throwable}</property>
     </Properties>
     <Appenders>
         <Console name="stdout" target="SYSTEM_OUT">

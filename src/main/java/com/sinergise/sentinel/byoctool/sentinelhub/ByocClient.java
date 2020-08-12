@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -24,11 +25,11 @@ public class ByocClient {
   private final Client httpClient;
   private final WebTarget byocTarget;
 
-  public ByocClient(AuthClient authClient, String locationId) {
-    this(authClient::accessToken, locationId);
+  public ByocClient(AuthClient authClient, ByocDeployment byocDeployment) {
+    this(authClient::accessToken, byocDeployment);
   }
 
-  public ByocClient(Supplier<String> accessTokenSupplier, String locationId) {
+  public ByocClient(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
     jsonProvider.setMapper(ObjectMapperFactory.newObjectMapper());
 
@@ -37,27 +38,15 @@ public class ByocClient {
             .register(jsonProvider)
             .register(new AddTokenRequestFilter(accessTokenSupplier))
             .register(new UserAgentRequestFilter());
-    Client httpClient = ClientBuilder.newClient(clientConfig);
 
-    this.httpClient = ClientBuilder.newClient(clientConfig);
-    this.byocTarget = httpClient.target(getServiceUrl(locationId));
-  }
+    this.httpClient =
+        ClientBuilder.newBuilder()
+            .withConfig(clientConfig)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
 
-  private String getServiceUrl(String locationId) {
-    final String serviceUrl;
-
-    switch (locationId) {
-      case "aws-eu-central-1":
-        serviceUrl = "https://services.sentinel-hub.com/api/v1/byoc";
-        break;
-      case "aws-us-west-2":
-        serviceUrl = "https://services-uswest2.sentinel-hub.com/api/v1/byoc";
-        break;
-      default:
-        throw new RuntimeException("Unexpected location " + locationId);
-    }
-
-    return serviceUrl;
+    this.byocTarget = httpClient.target(byocDeployment.getServiceUrl());
   }
 
   Client getHttpClient() {

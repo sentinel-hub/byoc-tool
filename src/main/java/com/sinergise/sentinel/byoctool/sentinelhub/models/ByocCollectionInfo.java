@@ -1,6 +1,7 @@
 package com.sinergise.sentinel.byoctool.sentinelhub.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocDeployment;
 import lombok.Getter;
 import lombok.Setter;
 import software.amazon.awssdk.regions.Region;
@@ -33,5 +34,16 @@ public class ByocCollectionInfo {
     }
 
     return region;
+  }
+
+  public ByocDeployment getDeployment() {
+    switch (location) {
+      case "aws-eu-central-1":
+        return ByocDeployment.AWS_EU_CENTRAL_1;
+      case "aws-us-west-2":
+        return ByocDeployment.AWS_US_WEST_2;
+      default:
+        throw new RuntimeException("Unexpected location " + location);
+    }
   }
 }

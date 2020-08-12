@@ -49,7 +49,7 @@ public class SetCoverageCmd implements Runnable {
         new ByocInfoClient(authClient)
             .getCollectionInfo(collectionId)
             .orElseThrow(() -> new RuntimeException("Collection doesn't exist."));
-    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getLocation());
+    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getDeployment());
 
     ByocTile tile = byocClient.getTile(collectionId, tileId);
     log.info("Processing tile {}", tile.idWithPath());

@@ -1,14 +1,13 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'com.diffplug.gradle.spotless' version '3.26.0'
     id 'idea'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
     id 'maven-publish'
 }
 
 group = 'com.sinergise.sentinel'
-version = '0.2.4'
+version = '0.2.5-SNAPSHOT'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -19,12 +18,6 @@ java {
 
 repositories {
     mavenCentral()
-}
-
-spotless {
-    java {
-        googleJavaFormat('1.7')
-    }
 }
 
 idea {

@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -56,7 +57,12 @@ public class AuthClient {
     ClientConfig clientConfig =
         new ClientConfig().register(jsonProvider).register(new UserAgentRequestFilter());
 
-    httpClient = ClientBuilder.newClient(clientConfig);
+    httpClient =
+        ClientBuilder.newBuilder()
+            .withConfig(clientConfig)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
 
     formData = new MultivaluedHashMap<>();
     formData.add("grant_type", "client_credentials");
