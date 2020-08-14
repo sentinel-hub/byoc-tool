@@ -1,24 +1,24 @@
 package com.sinergise.sentinel.byoctool.sentinelhub;
 
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocPage;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import org.glassfish.jersey.client.ClientConfig;
+
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
+import java.net.URI;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.*;
 
 public class ByocClient {
 
@@ -30,42 +30,27 @@ public class ByocClient {
   }
 
   public ByocClient(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
-    JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
-    jsonProvider.setMapper(ObjectMapperFactory.newObjectMapper());
-
     ClientConfig clientConfig =
         new ClientConfig()
-            .register(jsonProvider)
-            .register(new AddTokenRequestFilter(accessTokenSupplier))
+            .register(newJsonProvider())
+            .register(new AuthRequestFilter(accessTokenSupplier))
             .register(new UserAgentRequestFilter());
 
-    this.httpClient =
-        ClientBuilder.newBuilder()
-            .withConfig(clientConfig)
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build();
-
+    this.httpClient = newHttpClient(clientConfig);
     this.byocTarget = httpClient.target(byocDeployment.getServiceUrl());
   }
 
-  Client getHttpClient() {
-    return httpClient;
-  }
-
-  WebTarget getByocTarget() {
-    return byocTarget;
-  }
-
   public ByocCollection getCollection(String collectionId) {
-    Response response = byocTarget.path("collections").path(collectionId).request().get();
+    Response response = collectionsTarget().path(collectionId).request().get();
 
     if (response.getStatus() == 200) {
-      return response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {}).getData();
+      return response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {
+      }).getData();
     } else if (response.getStatus() == 404) {
       return null;
     } else {
-      ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {});
+      ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {
+      });
       throw new RuntimeException(shResponse.getError().getMessage());
     }
   }
@@ -73,38 +58,42 @@ public class ByocClient {
   public ByocTile getTile(String collectionId, String tileId) {
     Response response = tileTarget(collectionId, tileId).request().get();
 
-    ResponseUtils.ensureStatus(response, 200);
+    ensureStatus(response, 200);
 
-    return response.readEntity(new GenericType<ByocResponse<ByocTile>>() {}).getData();
+    return response.readEntity(new GenericType<ByocResponse<ByocTile>>() {
+    }).getData();
+  }
+
+  public Optional<ByocTile> searchTile(String collectionId, String path) {
+    Response response =
+        tilesTarget(collectionId)
+            .queryParam("path", path)
+            .request()
+            .get();
+
+    Optional<List<ByocTile>> tiles = readResponse(response, new GenericType<ByocPage<ByocTile>>() {
+    });
+    return tiles.flatMap(page -> page.isEmpty()
+        ? Optional.empty() : Optional.of(page.get(0)));
   }
 
   public Iterator<ByocTile> getTileIterator(String collectionId) {
-    return new PagingTileIterator(this, collectionId);
+    URI firstPageUrl = collectionsTarget().path(collectionId).path("tiles").getUri();
+    return new PagingIterator(firstPageUrl, httpClient);
   }
 
-  public Set<String> getTilePaths(String collectionId) {
-    Set<String> tilePaths = new HashSet<>();
-
-    Iterator<ByocTile> iter = getTileIterator(collectionId);
-    while (iter.hasNext()) {
-      tilePaths.add(iter.next().getPath());
-    }
-
-    return tilePaths;
-  }
-
-  public UUID createCollection(ByocCollection collection) {
+  public String createCollection(ByocCollection collection) {
     Response response =
-        byocTarget
-            .path("collections")
+        collectionsTarget()
             .request()
             .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE));
 
-    ResponseUtils.ensureStatus(response, 201);
+    ensureStatus(response, 201);
 
-    ByocResponse<ByocCollection> entity =
-        response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {});
-    return UUID.fromString(entity.getData().getId());
+    ByocResponse<ByocCollection> entity = response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {
+    });
+
+    return entity.getData().getId();
   }
 
   public String createTile(String collectionId, ByocTile tile) {
@@ -113,10 +102,11 @@ public class ByocClient {
             .request()
             .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));
 
-    ResponseUtils.ensureStatus(response, 201);
+    ensureStatus(response, 201);
 
     ByocTile returnedTile =
-        response.readEntity(new GenericType<ByocResponse<ByocTile>>() {}).getData();
+        response.readEntity(new GenericType<ByocResponse<ByocTile>>() {
+        }).getData();
 
     return returnedTile.getId();
   }
@@ -127,18 +117,22 @@ public class ByocClient {
             .request()
             .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE));
 
-    ResponseUtils.ensureStatus(response, 204);
+    ensureStatus(response, 204);
   }
 
-  private WebTarget tileTarget(String collectionId, String id) {
-    return tilesTarget(collectionId).path(id);
+  private WebTarget collectionsTarget() {
+    return byocTarget.path("collections");
   }
 
   private WebTarget collectionTarget(String collectionId) {
-    return byocTarget.path("collections").path(collectionId);
+    return collectionsTarget().path(collectionId);
   }
 
   private WebTarget tilesTarget(String collectionId) {
     return collectionTarget(collectionId).path("tiles");
+  }
+
+  private WebTarget tileTarget(String collectionId, String id) {
+    return tilesTarget(collectionId).path(id);
   }
 }

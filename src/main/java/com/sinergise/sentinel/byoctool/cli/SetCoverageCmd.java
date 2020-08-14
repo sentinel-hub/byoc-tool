@@ -32,7 +32,7 @@ public class SetCoverageCmd implements Runnable {
           "Optionally set the path to a local file corresponding to the input tile which will be used for coverage tracing. If omitted, the file will be accessed via S3.")
   private String file;
 
-  @Mixin private CoverageParams coverageParams;
+  @Mixin private CoverageTracingConfig coverageTracingConfig;
 
   @Option(
       names = {"--dry-run"},
@@ -49,7 +49,7 @@ public class SetCoverageCmd implements Runnable {
     ByocTile tile = byocClient.getTile(collectionId, tileId);
     log.info("Processing tile {}", tile.idWithPath());
 
-    CoverageCalculator coverageCalculator = new CoverageCalculator(coverageParams);
+    CoverageCalculator coverageCalculator = new CoverageCalculator(coverageTracingConfig);
 
     try {
       if (file != null) {

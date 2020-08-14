@@ -3,7 +3,7 @@ package com.sinergise.sentinel.byoctool.cli;
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
-import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.TileIngestionException;
+import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.TileIngestionFailed;
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
@@ -79,9 +80,9 @@ public class IngestCmd implements Runnable {
   private int nThreads;
 
   @ArgGroup(exclusive = false)
-  private CoverageParams coverageParams;
+  private CoverageTracingConfig tracingConfig;
 
-  private static class CoverageParams extends com.sinergise.sentinel.byoctool.cli.CoverageParams {
+  private static class CoverageTracingConfig extends com.sinergise.sentinel.byoctool.cli.CoverageTracingConfig {
 
     @Option(
         names = {"--trace-coverage"},
@@ -143,28 +144,31 @@ public class IngestCmd implements Runnable {
     ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
     S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
 
-    CogFactory cogFactory = new CogFactory()
-        .setNoDataValue(noDataValue)
-        .setUseCompressionPredictor(!noCompressionPredictor)
-        .setProcessingFolder(processingFolder);
+    CogFactory cogFactory = CogFactory.builder()
+        .noDataValue(noDataValue)
+        .useCompressionPredictor(!noCompressionPredictor)
+        .processingFolder(processingFolder)
+        .build();
 
-    ByocIngestor ingestor = new ByocIngestor(byocClient, s3Client)
-        .setCogFactory(cogFactory)
-        .setExecutorService(Executors.newFixedThreadPool(nThreads));
+    ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 
-    if (coverageParams != null) {
-      ingestor.setCoverageParams(coverageParams);
-    }
+    ByocIngestor ingestor = ByocIngestor.builder()
+        .byocClient(byocClient)
+        .s3Client(s3Client)
+        .cogFactory(cogFactory)
+        .executor(executor)
+        .tracingConfig(tracingConfig)
+        .build();
 
     try {
       ingestor.ingest(collectionId, tiles);
-    } catch (TileIngestionException e) {
+    } catch (TileIngestionFailed e) {
       log.error(e.getMessage() + " " + String.join(" ", e.getErrors()));
     } catch (RuntimeException e) {
       log.error("Failed to ingest tiles.", e);
+    } finally {
+      executor.shutdown();
     }
-
-    ingestor.getExecutorService().shutdown();
   }
 
   private void printTiles(Collection<Tile> tiles) {

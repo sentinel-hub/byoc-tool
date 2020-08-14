@@ -1,52 +1,43 @@
 package com.sinergise.sentinel.byoctool.sentinelhub;
 
+import com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.*;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
-import java.util.Optional;
-import java.util.function.Supplier;
+import org.glassfish.jersey.client.ClientConfig;
+
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.*;
 
 public class GlobalByocClient {
 
-  private final WebTarget infoTarget;
+  private static final String RESOURCE_URL = "https://services.sentinel-hub.com/api/v1/byoc/global";
+
+  private final WebTarget resourceTarget;
 
   public GlobalByocClient(AuthClient authClient) {
     this(authClient::accessToken);
   }
 
   public GlobalByocClient(Supplier<String> accessTokenSupplier) {
-    JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
-    jsonProvider.setMapper(ObjectMapperFactory.newObjectMapper());
-
     ClientConfig clientConfig =
         new ClientConfig()
-            .register(jsonProvider)
-            .register(new AddTokenRequestFilter(accessTokenSupplier))
+            .register(newJsonProvider())
+            .register(new AuthRequestFilter(accessTokenSupplier))
             .register(new UserAgentRequestFilter());
-    Client httpClient = ClientBuilder.newClient(clientConfig);
 
-    this.infoTarget = httpClient.target("https://services.sentinel-hub.com/api/v1/byoc");
+    Client httpClient = newHttpClient(clientConfig);
+    this.resourceTarget = httpClient.target(RESOURCE_URL);
   }
 
   public Optional<ByocCollectionInfo> getCollectionInfo(String collectionId) {
-    Response response = infoTarget.path("global").path(collectionId).request().get();
-
-    if (response.getStatus() == 200) {
-      ByocCollectionInfo info =
-          response.readEntity(new GenericType<ByocResponse<ByocCollectionInfo>>() {}).getData();
-      return Optional.ofNullable(info);
-    } else if (response.getStatus() == 404) {
-      return Optional.empty();
-    } else {
-      ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {});
-      throw new RuntimeException(shResponse.getError().getMessage());
-    }
+    Response response = resourceTarget.path(collectionId).request().get();
+    return readResponse(response, new GenericType<ByocResponse<ByocCollectionInfo>>() {
+    });
   }
 }

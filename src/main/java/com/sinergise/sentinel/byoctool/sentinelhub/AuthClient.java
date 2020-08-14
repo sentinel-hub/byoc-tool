@@ -3,23 +3,22 @@ package com.sinergise.sentinel.byoctool.sentinelhub;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.Response;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.Response;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
+import java.util.Optional;
 
 @Log4j2
 public class AuthClient {
@@ -50,19 +49,17 @@ public class AuthClient {
     Objects.requireNonNull(clientSecret, "client secret missing");
 
     ObjectMapper objectMapper =
-        new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        new ObjectMapper()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
     jsonProvider.setMapper(objectMapper);
 
     ClientConfig clientConfig =
-        new ClientConfig().register(jsonProvider).register(new UserAgentRequestFilter());
+        new ClientConfig()
+            .register(jsonProvider)
+            .register(new ServiceUtils.UserAgentRequestFilter());
 
-    httpClient =
-        ClientBuilder.newBuilder()
-            .withConfig(clientConfig)
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build();
+    httpClient = ServiceUtils.newHttpClient(clientConfig);
 
     formData = new MultivaluedHashMap<>();
     formData.add("grant_type", "client_credentials");
@@ -91,7 +88,7 @@ public class AuthClient {
             .request(MediaType.APPLICATION_JSON_TYPE)
             .post(Entity.form(formData));
 
-    ResponseUtils.ensureStatus(response, 200);
+    ServiceUtils.ensureStatus(response, 200);
 
     return response.readEntity(TokenResponse.class);
   }

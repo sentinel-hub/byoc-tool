@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sinergise.sentinel.byoctool.sentinelhub.Constants;
 import com.sinergise.sentinel.byoctool.utils.JtsUtils;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -17,6 +16,8 @@ import org.locationtech.jts.geom.Geometry;
 @Getter
 @Setter
 public class ByocTile implements NoJsonAutoDetect {
+
+  public static final String BAND_PLACEHOLDER = "(BAND)";
 
   @JsonProperty("id")
   private String id;
@@ -54,7 +55,7 @@ public class ByocTile implements NoJsonAutoDetect {
   }
 
   public String bandPath(String band) {
-    return getPath().replace(Constants.BAND_PLACEHOLDER, band);
+    return getPath().replace(BAND_PLACEHOLDER, band);
   }
 
   public void setJtsCoverGeometry(Geometry coverage) {

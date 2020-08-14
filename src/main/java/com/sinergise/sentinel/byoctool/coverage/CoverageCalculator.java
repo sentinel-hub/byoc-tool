@@ -1,6 +1,6 @@
 package com.sinergise.sentinel.byoctool.coverage;
 
-import com.sinergise.sentinel.byoctool.cli.CoverageParams;
+import com.sinergise.sentinel.byoctool.cli.CoverageTracingConfig;
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.Scale;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+
+import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -16,9 +18,10 @@ import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 
+@RequiredArgsConstructor
 public class CoverageCalculator {
 
-  private final CoverageParams params;
+  private final CoverageTracingConfig config;
 
   private Geometry coveragesIntersection;
   private Envelope tileEnvelope;
@@ -27,10 +30,6 @@ public class CoverageCalculator {
 
   private static final BufferParameters BUFFER_PARAMETERS =
       new BufferParameters(1, BufferParameters.CAP_SQUARE, BufferParameters.JOIN_MITRE, 10);
-
-  public CoverageCalculator(CoverageParams params) {
-    this.params = params;
-  }
 
   public void addImage(Path path) throws IOException {
     addImage(path.toFile());
@@ -47,8 +46,8 @@ public class CoverageCalculator {
       imageReader.setInput(iis);
 
       int imageIndex =
-          params.getImageIndex() < compoundDirectory.directoryCount()
-              ? params.getImageIndex()
+          config.getImageIndex() < compoundDirectory.directoryCount()
+              ? config.getImageIndex()
               : compoundDirectory.directoryCount() - 1;
       Geometry geometry = Vectorization.vectorize(imageReader.read(imageIndex), compoundDirectory);
 
@@ -75,8 +74,8 @@ public class CoverageCalculator {
     } else {
       coverage = DouglasPeuckerSimplifier.simplify(coveragesIntersection, 0);
 
-      if (params.getNegativeBufferInPixels() != 0) {
-        double negativeBuffer = lowestResolution * params.getNegativeBufferInPixels();
+      if (config.getNegativeBufferInPixels() != 0) {
+        double negativeBuffer = lowestResolution * config.getNegativeBufferInPixels();
 
         Geometry tile = new GeometryFactory().toGeometry(tileEnvelope);
         Geometry coverageInverse = tile.difference(coverage);
@@ -85,8 +84,8 @@ public class CoverageCalculator {
         coverage = coverage.difference(inverseBuf);
       }
 
-      if (params.getDistanceToleranceInPixels() != 0) {
-        double distanceTolerance = lowestResolution * params.getDistanceToleranceInPixels();
+      if (config.getDistanceToleranceInPixels() != 0) {
+        double distanceTolerance = lowestResolution * config.getDistanceToleranceInPixels();
 
         coverage = DouglasPeuckerSimplifier.simplify(coverage, distanceTolerance);
       }

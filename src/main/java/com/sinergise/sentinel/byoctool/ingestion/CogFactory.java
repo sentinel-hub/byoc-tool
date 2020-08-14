@@ -7,6 +7,10 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.GdalInfo.Band;
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.SampleFormat;
+import lombok.Builder;
+
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -15,17 +19,15 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
-@Setter
-@Accessors(chain = true)
+@Builder
 public class CogFactory {
 
   private Integer noDataValue;
+
+  @Builder.Default
   private Boolean useCompressionPredictor = true;
+
   private Path processingFolder;
 
   Path createCog(Tile tile, Path inputFile, BandMap bandMap) throws IOException {

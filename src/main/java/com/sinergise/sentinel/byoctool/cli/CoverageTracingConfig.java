@@ -8,7 +8,7 @@ import picocli.CommandLine.Option;
 @Getter
 @Setter
 @Accessors(chain = true)
-public class CoverageParams {
+public class CoverageTracingConfig {
 
   @Option(
       names = {"--trace-image-idx"},
