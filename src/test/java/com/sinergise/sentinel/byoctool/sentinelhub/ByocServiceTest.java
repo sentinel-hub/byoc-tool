@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class ByocServiceTest {
 
   static ObjectMapper objectMapper() {
-    return ObjectMapperFactory.newObjectMapper();
+    return ServiceUtils.newObjectMapper();
   }
 
   @Test
