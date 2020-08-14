@@ -13,15 +13,15 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 
-public class ByocInfoClient {
+public class GlobalByocClient {
 
   private final WebTarget infoTarget;
 
-  public ByocInfoClient(AuthClient authClient) {
+  public GlobalByocClient(AuthClient authClient) {
     this(authClient::accessToken);
   }
 
-  public ByocInfoClient(Supplier<String> accessTokenSupplier) {
+  public GlobalByocClient(Supplier<String> accessTokenSupplier) {
     JacksonJsonProvider jsonProvider = new JacksonJaxbJsonProvider();
     jsonProvider.setMapper(ObjectMapperFactory.newObjectMapper());
 

@@ -2,20 +2,19 @@ package com.sinergise.sentinel.byoctool.cli;
 
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
-import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
-import com.sinergise.sentinel.byoctool.sentinelhub.ByocInfoClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Paths;
 import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Paths;
 
 @Command(name = "set-coverage", description = "Set tile coverage.")
 @Log4j2
@@ -44,12 +43,8 @@ public class SetCoverageCmd implements Runnable {
 
   @Override
   public void run() {
-    AuthClient authClient = parent.newAuthClient();
-    ByocCollectionInfo collectionInfo =
-        new ByocInfoClient(authClient)
-            .getCollectionInfo(collectionId)
-            .orElseThrow(() -> new RuntimeException("Collection doesn't exist."));
-    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getDeployment());
+    ByocCollectionInfo collectionInfo = parent.getCollectionInfo(collectionId);
+    ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
 
     ByocTile tile = byocClient.getTile(collectionId, tileId);
     log.info("Processing tile {}", tile.idWithPath());

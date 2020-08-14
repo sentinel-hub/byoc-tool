@@ -7,11 +7,13 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.TileIngestionExcep
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
-import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
-import com.sinergise.sentinel.byoctool.sentinelhub.ByocInfoClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
+import lombok.extern.log4j.Log4j2;
+import picocli.CommandLine.*;
+import software.amazon.awssdk.services.s3.S3Client;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,13 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-import lombok.extern.log4j.Log4j2;
-import picocli.CommandLine.ArgGroup;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
-import picocli.CommandLine.ParentCommand;
-import software.amazon.awssdk.services.s3.S3Client;
 
 @Command(
     name = "ingest",
@@ -144,25 +139,18 @@ public class IngestCmd implements Runnable {
       }
     }
 
-    AuthClient authClient = parent.newAuthClient();
-
-    ByocCollectionInfo collectionInfo =
-        new ByocInfoClient(authClient)
-            .getCollectionInfo(collectionId)
-            .orElseThrow(() -> new RuntimeException("Collection doesn't exist."));
-
-    ByocClient byocClient = new ByocClient(authClient, collectionInfo.getDeployment());
-
+    ByocCollectionInfo collectionInfo = parent.getCollectionInfo(collectionId);
+    ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
     S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
 
-    ByocIngestor ingestor =
-        new ByocIngestor(byocClient, s3Client)
-            .setCogFactory(
-                new CogFactory()
-                    .setNoDataValue(noDataValue)
-                    .setUseCompressionPredictor(!noCompressionPredictor)
-                    .setProcessingFolder(processingFolder))
-            .setExecutorService(Executors.newFixedThreadPool(nThreads));
+    CogFactory cogFactory = new CogFactory()
+        .setNoDataValue(noDataValue)
+        .setUseCompressionPredictor(!noCompressionPredictor)
+        .setProcessingFolder(processingFolder);
+
+    ByocIngestor ingestor = new ByocIngestor(byocClient, s3Client)
+        .setCogFactory(cogFactory)
+        .setExecutorService(Executors.newFixedThreadPool(nThreads));
 
     if (coverageParams != null) {
       ingestor.setCoverageParams(coverageParams);

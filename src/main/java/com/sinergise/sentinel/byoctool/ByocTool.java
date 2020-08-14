@@ -4,6 +4,10 @@ import com.sinergise.sentinel.byoctool.cli.IngestCmd;
 import com.sinergise.sentinel.byoctool.cli.ListTilesCmd;
 import com.sinergise.sentinel.byoctool.cli.SetCoverageCmd;
 import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.ByocDeployment;
+import com.sinergise.sentinel.byoctool.sentinelhub.GlobalByocClient;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine;
 import picocli.CommandLine.*;
@@ -25,7 +29,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "v0.2.5";
+  public static final String VERSION = "v0.2.6-SNAPSHOT";
 
   @ArgGroup(exclusive = false)
   private AuthCredentials authCredentials;
@@ -63,15 +67,40 @@ public class ByocTool implements Runnable {
     private String secretKey;
   }
 
+  private AuthClient authClient;
+
   @Override
   public void run() {}
 
-  public AuthClient newAuthClient() {
+  protected AuthClient newAuthClient() {
     if (authCredentials != null) {
       return new AuthClient(authCredentials.clientId, authCredentials.clientSecret);
     } else {
       return new AuthClient();
     }
+  }
+
+  protected AuthClient getAuthClient() {
+    if (authClient == null) {
+      authClient = newAuthClient();
+    }
+
+    return authClient;
+  }
+
+  public ByocClient newByocClient(ByocDeployment deployment) {
+    return new ByocClient(getAuthClient(), deployment);
+  }
+
+  public ByocClient newByocClient(String collectionId) {
+    ByocCollectionInfo collectionInfo = getCollectionInfo(collectionId);
+    return newByocClient(collectionInfo.getDeployment());
+  }
+
+  public ByocCollectionInfo getCollectionInfo(String collectionId) {
+    return new GlobalByocClient(getAuthClient())
+        .getCollectionInfo(collectionId)
+        .orElseThrow(() -> new RuntimeException("Collection not found."));
   }
 
   public S3Client newS3Client(Region region) {
