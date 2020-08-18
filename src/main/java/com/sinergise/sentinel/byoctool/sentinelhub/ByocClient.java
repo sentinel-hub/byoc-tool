@@ -26,7 +26,7 @@ public class ByocClient {
   private final WebTarget byocTarget;
 
   public ByocClient(AuthClient authClient, ByocDeployment byocDeployment) {
-    this(authClient::accessToken, byocDeployment);
+    this(authClient::getAccessToken, byocDeployment);
   }
 
   public ByocClient(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {

@@ -21,7 +21,7 @@ public class GlobalByocClient {
   private final WebTarget resourceTarget;
 
   public GlobalByocClient(AuthClient authClient) {
-    this(authClient::accessToken);
+    this(authClient::getAccessToken);
   }
 
   public GlobalByocClient(Supplier<String> accessTokenSupplier) {

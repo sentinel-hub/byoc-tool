@@ -89,7 +89,6 @@ public class ByocIngestor {
   }
 
   private Optional<String> ingestTile(ByocCollection collection, Tile tile) throws IOException {
-
     if (doesTileExist(collection, tile)) {
       System.out.println(String.format("Skipping tile \"%s\" because it exists", tile.path()));
       return Optional.empty();
