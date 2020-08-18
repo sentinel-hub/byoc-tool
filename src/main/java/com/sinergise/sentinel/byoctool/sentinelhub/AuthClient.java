@@ -67,7 +67,7 @@ public class AuthClient {
     formData.add("client_secret", clientSecret);
   }
 
-  public String accessToken() {
+  public String getAccessToken() {
     if (accessToken == null || Instant.now().isAfter(expiresIn)) {
       TokenResponse tokenResponse = newAccessToken();
 

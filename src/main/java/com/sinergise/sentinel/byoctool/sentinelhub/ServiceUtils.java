@@ -50,10 +50,14 @@ class ServiceUtils {
 
   static void ensureStatus(Response response, int status) {
     if (response.getStatus() != status) {
-      ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {
-      });
-      throw new RuntimeException(shResponse.getError().getMessage());
+      throw new RuntimeException(parseErrorMessage(response));
     }
+  }
+
+  private static String parseErrorMessage(Response response) {
+    ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {
+    });
+    return shResponse.getError().getMessage();
   }
 
   static <U,V extends ByocResponse<U>> Optional<U> readResponse(Response response, GenericType<V> entityType) {
@@ -63,8 +67,7 @@ class ServiceUtils {
     } else if (response.getStatus() == 404) {
       return Optional.empty();
     } else {
-      ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {});
-      throw new RuntimeException(shResponse.getError().getMessage());
+      throw new RuntimeException(parseErrorMessage(response));
     }
   }
 
