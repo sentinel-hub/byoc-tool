@@ -5,14 +5,16 @@ import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
 import org.geojson.GeoJsonObject;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,7 +28,8 @@ import java.util.stream.Collectors;
 import static com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile.BAND_PLACEHOLDER;
 
 @Log4j2
-@Builder
+@RequiredArgsConstructor
+@Accessors(chain = true)
 public class ByocIngestor {
 
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
@@ -35,18 +38,19 @@ public class ByocIngestor {
 
   private final S3Client s3Client;
 
-  private final CogFactory cogFactory;
+  @Setter private Executor executor = ForkJoinPool.commonPool();
 
-  private final ExecutorService executor;
+  @Setter private CogFactory cogFactory = new CogFactory();
 
-  private CoverageTracingConfig tracingConfig;
+  @Setter private CoverageTracingConfig tracingConfig;
 
-  private Consumer<Tile> tileStartCallback;
+  @Setter private Consumer<Tile> tileStartCallback;
 
-  private Consumer<Tile> tileIngestedCallback;
+  @Setter private  Consumer<Tile> tileIngestedCallback;
 
   public Collection<String> ingest(String collectionId, Collection<Tile> tiles) {
-    ByocCollection collection = getCollection(collectionId);
+    ByocCollection collection = byocClient.getCollection(collectionId)
+        .orElseThrow(() -> new RuntimeException("Collection not found."));
 
     CompletionService<Optional<String>> completionService =
         new ExecutorCompletionService<>(executor);
@@ -75,17 +79,7 @@ public class ByocIngestor {
       futures.forEach(f -> f.cancel(true));
     }
 
-    s3Client.close();
-
     return createdTiles;
-  }
-
-  private ByocCollection getCollection(String collectionId) {
-    ByocCollection collection = byocClient.getCollection(collectionId);
-    if (collection == null) {
-      throw new RuntimeException("Collection does not exist.");
-    }
-    return collection;
   }
 
   private Optional<String> ingestTile(ByocCollection collection, Tile tile) throws IOException {
@@ -144,7 +138,7 @@ public class ByocIngestor {
 
       String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
       log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
-      S3Upload.uploadWithRetry(s3Client, collection.getS3Bucket(), s3Key, cogPath);
+      uploadWithRetry(s3Client, collection.getS3Bucket(), s3Key, cogPath);
     }
 
     ByocTile byocTile = new ByocTile();
@@ -159,7 +153,7 @@ public class ByocIngestor {
 
     log.info("Creating tile {}", tile.path());
 
-    String tileId = byocClient.createTile(collection.getId(), byocTile);
+    String tileId = byocClient.createTile(collection.getId(), byocTile).getId();
 
     if (tileIngestedCallback != null) {
       tileIngestedCallback.accept(tile);
@@ -182,28 +176,45 @@ public class ByocIngestor {
         .collect(Collectors.toList());
   }
 
+  private static void uploadWithRetry(S3Client s3, String bucket, String key, Path path) {
+    int i = 0;
+
+    while (true) {
+      try {
+        PutObjectRequest request = PutObjectRequest.builder().bucket(bucket).key(key).build();
+        s3.putObject(request, RequestBody.fromFile(path));
+        return;
+      } catch (Exception e) {
+        if (i++ > 2) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+  }
+
   @Value
   @Accessors(fluent = true)
   public static class Tile {
+
 
     private final String path;
     private final LocalDateTime sensingTime;
     private final GeoJsonObject coverage;
     private final List<InputFile> inputFiles;
   }
-
   @Value
   @Accessors(fluent = true)
   public static class InputFile {
 
+
     private final Path file;
     private final List<BandMap> bandMaps;
   }
-
   @RequiredArgsConstructor
   @Getter
   @Accessors(fluent = true)
   public static class BandMap {
+
 
     private final int index;
     private final String name;
@@ -221,17 +232,17 @@ public class ByocIngestor {
       return this;
     }
   }
-
   @Value
   @Accessors(fluent = true)
   private static class CogSource {
+
     private final Path inputFile;
     private final BandMap bandMap;
     private final Path cogPath;
   }
-
   @Getter
   public static class TileIngestionFailed extends RuntimeException {
+
 
     private final Collection<String> errors;
 

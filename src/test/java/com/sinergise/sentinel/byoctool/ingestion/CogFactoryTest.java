@@ -1,18 +1,19 @@
 package com.sinergise.sentinel.byoctool.ingestion;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.BandMap;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.SampleFormat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CogFactoryTest {
 
@@ -36,7 +37,7 @@ class CogFactoryTest {
     Path expectedCog = Paths.get(getClass().getResource(expectedCogName).toURI());
 
     BandMap bandMap = new BandMap(bandIndex, bandName).setMinSize(1024);
-    Path actualCog = CogFactory.builder().build().createCog(null, inputFile, bandMap);
+    Path actualCog = new CogFactory().createCog(null, inputFile, bandMap);
 
     assertArrayEquals(Files.readAllBytes(expectedCog), Files.readAllBytes(actualCog));
   }

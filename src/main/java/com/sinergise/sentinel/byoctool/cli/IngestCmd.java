@@ -144,21 +144,17 @@ public class IngestCmd implements Runnable {
     ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
     S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
 
-    CogFactory cogFactory = CogFactory.builder()
-        .noDataValue(noDataValue)
-        .useCompressionPredictor(!noCompressionPredictor)
-        .processingFolder(processingFolder)
-        .build();
+    CogFactory cogFactory = new CogFactory()
+        .setNoDataValue(noDataValue)
+        .setUseCompressionPredictor(!noCompressionPredictor)
+        .setProcessingFolder(processingFolder);
 
     ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 
-    ByocIngestor ingestor = ByocIngestor.builder()
-        .byocClient(byocClient)
-        .s3Client(s3Client)
-        .cogFactory(cogFactory)
-        .executor(executor)
-        .tracingConfig(tracingConfig)
-        .build();
+    ByocIngestor ingestor = new ByocIngestor(byocClient, s3Client)
+        .setExecutor(executor)
+        .setCogFactory(cogFactory)
+        .setTracingConfig(tracingConfig);
 
     try {
       ingestor.ingest(collectionId, tiles);
@@ -168,6 +164,7 @@ public class IngestCmd implements Runnable {
       log.error("Failed to ingest tiles.", e);
     } finally {
       executor.shutdown();
+      s3Client.close();
     }
   }
 

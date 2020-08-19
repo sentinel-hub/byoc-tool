@@ -20,6 +20,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.*;
+import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.executeWithRetry;
+
 @Log4j2
 public class AuthClient {
 
@@ -57,9 +60,9 @@ public class AuthClient {
     ClientConfig clientConfig =
         new ClientConfig()
             .register(jsonProvider)
-            .register(new ServiceUtils.UserAgentRequestFilter());
+            .register(new UserAgentRequestFilter());
 
-    httpClient = ServiceUtils.newHttpClient(clientConfig);
+    httpClient = newHttpClient(clientConfig);
 
     formData = new MultivaluedHashMap<>();
     formData.add("grant_type", "client_credentials");
@@ -81,14 +84,14 @@ public class AuthClient {
   private TokenResponse newAccessToken() {
     log.info("Fetching an access token");
 
-    Response response =
+    Response response = executeWithRetry(() ->
         httpClient
             .target(AUTH_SERVICE_BASE_URL)
             .path("token")
             .request(MediaType.APPLICATION_JSON_TYPE)
-            .post(Entity.form(formData));
+            .post(Entity.form(formData)));
 
-    ServiceUtils.ensureStatus(response, 200);
+    ensureStatus(response, 200);
 
     return response.readEntity(TokenResponse.class);
   }
