@@ -4,11 +4,12 @@ import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocPage;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+
+import static com.sinergise.sentinel.byoctool.sentinelhub.ByocClient.getTilesPage;
+import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.executeWithRetry;
 
 class PagingIterator implements Iterator<ByocTile> {
 
@@ -22,10 +23,16 @@ class PagingIterator implements Iterator<ByocTile> {
   }
 
   private void fetchPage(URI uri) {
-    Response response = httpClient.target(uri).request().get();
-    ByocPage<ByocTile> page = response.readEntity(new GenericType<ByocPage<ByocTile>>() {});
-    tiles = page.getData();
-    nextUrl = page.getLinks().getNext();
+    Response response = executeWithRetry(() -> httpClient.target(uri).request().get());
+    Optional<ByocPage<ByocTile>> page = getTilesPage(response);
+
+    if (page.isPresent()) {
+      tiles = page.get().getData();
+      nextUrl = page.get().getLinks().getNext();
+    } else {
+      tiles = Collections.emptyList();
+      nextUrl = null;
+    }
   }
 
   @Override

@@ -19,7 +19,7 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.Optional;
+import javax.ws.rs.core.Response.Status.Family;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -60,15 +60,34 @@ class ServiceUtils {
     return shResponse.getError().getMessage();
   }
 
-  static <U,V extends ByocResponse<U>> Optional<U> readResponse(Response response, GenericType<V> entityType) {
-    if (response.getStatus() == 200) {
-      U data = response.readEntity(entityType).getData();
-      return Optional.ofNullable(data);
-    } else if (response.getStatus() == 404) {
-      return Optional.empty();
-    } else {
+  static Response executeWithRetry(Supplier<Response> request) {
+    return executeWithRetry(request, 4);
+  }
+
+  static Response executeWithRetry(Supplier<Response> request, int maxRetries) {
+    int maxAttempts = maxRetries + 1;
+    long delay = TimeUnit.SECONDS.toMillis(10);
+
+    Response response;
+    boolean requestFailed;
+    int attempt = 0;
+    do {
+      attempt += 1;
+      if (attempt > 1) {
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException ignored) { }
+      }
+
+      response = request.get();
+      requestFailed = response.getStatusInfo().getFamily() == Family.SERVER_ERROR;
+    } while (requestFailed && attempt < maxAttempts);
+
+    if (requestFailed) {
       throw new RuntimeException(parseErrorMessage(response));
     }
+
+    return response;
   }
 
   static class UserAgentRequestFilter implements ClientRequestFilter {

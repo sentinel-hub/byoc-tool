@@ -7,7 +7,8 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.GdalInfo.Band;
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.SampleFormat;
-import lombok.Builder;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
@@ -20,12 +21,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-@Builder
+@Setter
+@Accessors(chain = true)
 public class CogFactory {
 
   private Integer noDataValue;
 
-  @Builder.Default
   private Boolean useCompressionPredictor = true;
 
   private Path processingFolder;

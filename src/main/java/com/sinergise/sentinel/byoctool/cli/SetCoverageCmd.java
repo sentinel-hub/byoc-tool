@@ -46,21 +46,21 @@ public class SetCoverageCmd implements Runnable {
     ByocCollectionInfo collectionInfo = parent.getCollectionInfo(collectionId);
     ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
 
-    ByocTile tile = byocClient.getTile(collectionId, tileId);
-    log.info("Processing tile {}", tile.idWithPath());
+    ByocCollection collection = byocClient.getCollection(collectionId)
+        .orElseThrow(() -> new RuntimeException("Collection not found."));
+
+    ByocTile tile = byocClient.getTile(collectionId, tileId)
+        .orElseThrow((() -> new RuntimeException("Tile not found.")));
 
     CoverageCalculator coverageCalculator = new CoverageCalculator(coverageTracingConfig);
+    S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
+
+    log.info("Processing tile {}", tile.idWithPath());
 
     try {
       if (file != null) {
         coverageCalculator.addImage(Paths.get(file));
       } else {
-        ByocCollection collection = byocClient.getCollection(collectionId);
-        if (collection == null) {
-          throw new RuntimeException("Collection does not exist.");
-        }
-
-        S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
         processTileBands(collection, tile, s3Client, coverageCalculator);
       }
     } catch (IOException e) {

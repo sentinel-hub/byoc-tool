@@ -36,8 +36,18 @@ public class GlobalByocClient {
   }
 
   public Optional<ByocCollectionInfo> getCollectionInfo(String collectionId) {
-    Response response = resourceTarget.path(collectionId).request().get();
-    return readResponse(response, new GenericType<ByocResponse<ByocCollectionInfo>>() {
-    });
+    Response response = executeWithRetry(() ->
+        resourceTarget.path(collectionId).request().get());
+
+    if (response.getStatus() == 404) {
+      return Optional.empty();
+    }
+
+    ensureStatus(response, 200);
+
+    ByocCollectionInfo info = response.readEntity(new GenericType<ByocResponse<ByocCollectionInfo>>() {
+    }).getData();
+
+    return Optional.of(info);
   }
 }
