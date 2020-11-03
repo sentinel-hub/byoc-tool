@@ -14,11 +14,9 @@ import javax.imageio.stream.ImageInputStream;
 class TileValidation {
 
   static Collection<String> validate(List<Path> paths) {
-    boolean didUseCache = ImageIO.getUseCache();
     List<String> errors = new LinkedList<>();
 
     try {
-      ImageIO.setUseCache(false);
       List<TiffCompoundDirectory> ifds = new LinkedList<>();
 
       for (Path path : paths) {
@@ -57,8 +55,6 @@ class TileValidation {
       }
     } catch (IOException e) {
       throw new RuntimeException("Error occurred during validation", e);
-    } finally {
-      ImageIO.setUseCache(didUseCache);
     }
 
     return errors;
