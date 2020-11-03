@@ -169,9 +169,8 @@ public class CogFactory {
                 "COMPRESS=DEFLATE"));
 
     if (compressionPredictor) {
-      try (InputStream is = Files.newInputStream(inputPath)) {
-        ImageInputStream iis = ImageIO.createImageInputStream(is);
-        TiffCompoundDirectory directory = new TiffCompoundDirectory(iis);
+      try (ImageInputStream imageStream = ImageIO.createImageInputStream(inputPath.toFile())) {
+        TiffCompoundDirectory directory = new TiffCompoundDirectory(imageStream);
         Integer predictor = getPredictor(directory.sampleFormat());
 
         if (predictor != null) {
