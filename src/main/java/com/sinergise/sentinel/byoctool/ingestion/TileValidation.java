@@ -34,8 +34,6 @@ class TileValidation {
 
           if (ifd.scale() == null) {
             errors.add(missingScale(path));
-          } else if (Math.abs(ifd.scale().x() - ifd.scale().y()) > 1e-5) {
-            errors.add(differentXYScale(path));
           }
         }
       }
@@ -78,12 +76,6 @@ class TileValidation {
         path, TiffDirectory.TAG_MODEL_PIXEL_SCALE);
   }
 
-  private static String differentXYScale(Path path) {
-    return String.format(
-        "File %s has different x and y scale in TIFF tag %s.",
-        path, TiffDirectory.TAG_MODEL_PIXEL_SCALE);
-  }
-
   private static String differentGeoParams() {
     return String.format(
         "Files have different values in TIFF tag %d.", TiffDirectory.TAG_GEO_ASCII_PARAMS);
@@ -92,11 +84,6 @@ class TileValidation {
   private static String differentTiePoints() {
     return String.format(
         "Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_TIE_POINT);
-  }
-
-  private static String differentScales() {
-    return String.format(
-        "Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_PIXEL_SCALE);
   }
 
   private static String unsupportedEpsgcode(Integer epsgCode) {
