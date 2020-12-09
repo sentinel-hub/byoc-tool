@@ -13,13 +13,9 @@ import lombok.experimental.Accessors;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Setter
 @Accessors(chain = true)
@@ -108,7 +104,7 @@ public class CogFactory {
       Path inputPath, int bandNumber, Integer noDataValue, String dataType, Path outPath) {
     List<String> command =
         new LinkedList<>(
-            Arrays.asList("gdal_translate", "-of", "GTIFF", "-b", String.valueOf(bandNumber)));
+            Arrays.asList("gdal_translate", "-of", "GTIFF", "-co", "BIGTIFF=YES", "-b", String.valueOf(bandNumber)));
 
     if (noDataValue != null) {
       command.addAll(Arrays.asList("-a_nodata", String.valueOf(noDataValue)));
@@ -183,7 +179,16 @@ public class CogFactory {
         Arrays.asList(
             inputPath.toAbsolutePath().toString(), outputPath.toAbsolutePath().toString()));
 
-    ProcessUtil.runCommand(command.toArray(new String[0]));
+    List<String> commandStdTiff = new ArrayList<>(command);
+    List<String> commandBigTiff = new ArrayList<>(command);
+    commandStdTiff.addAll(Arrays.asList("-co", "BIGTIFF=NO"));
+    commandBigTiff.addAll(Arrays.asList("-co", "BIGTIFF=YES"));
+
+    try {
+      ProcessUtil.runCommand(commandStdTiff.toArray(new String[0]));
+    } catch (RuntimeException e) {
+      ProcessUtil.runCommand(commandBigTiff.toArray(new String[0]));
+    }
   }
 
   static Integer getPredictor(int sampleFormat) {
