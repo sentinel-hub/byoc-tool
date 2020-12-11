@@ -28,16 +28,17 @@ public class GlobalByocClient {
     ClientConfig clientConfig =
         new ClientConfig()
             .register(newJsonProvider())
-            .register(new AuthRequestFilter(accessTokenSupplier))
-            .register(new UserAgentRequestFilter());
+            .register(new AuthRequestFilter(accessTokenSupplier));
 
     Client httpClient = newHttpClient(clientConfig);
     this.resourceTarget = httpClient.target(RESOURCE_URL);
   }
 
   public Optional<ByocCollectionInfo> getCollectionInfo(String collectionId) {
-    Response response = executeWithRetry(() ->
-        resourceTarget.path(collectionId).request().get());
+    Response response = executeWithRetry(
+        "Fetching location of the collection",
+        () ->
+            resourceTarget.path(collectionId).request().get());
 
     if (response.getStatus() == 404) {
       return Optional.empty();

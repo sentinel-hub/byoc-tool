@@ -6,7 +6,10 @@ import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 
 import static com.sinergise.sentinel.byoctool.sentinelhub.ByocClient.getTilesPage;
 import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.executeWithRetry;
@@ -23,7 +26,10 @@ class PagingIterator implements Iterator<ByocTile> {
   }
 
   private void fetchPage(URI uri) {
-    Response response = executeWithRetry(() -> httpClient.target(uri).request().get());
+    Response response = executeWithRetry(
+        "Fetching a page of tiles",
+        () -> httpClient.target(uri).request().get());
+
     Optional<ByocPage<ByocTile>> page = getTilesPage(response);
 
     if (page.isPresent()) {

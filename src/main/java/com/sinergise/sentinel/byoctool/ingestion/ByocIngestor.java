@@ -46,7 +46,7 @@ public class ByocIngestor {
 
   @Setter private Consumer<Tile> tileStartCallback;
 
-  @Setter private  Consumer<Tile> tileIngestedCallback;
+  @Setter private Consumer<Tile> tileIngestedCallback;
 
   public Collection<String> ingest(String collectionId, Collection<Tile> tiles) {
     ByocCollection collection = byocClient.getCollection(collectionId)
@@ -151,8 +151,6 @@ public class ByocIngestor {
       byocTile.setCoverGeometry(tile.coverage());
     }
 
-    log.info("Creating tile {}", tile.path());
-
     String tileId = byocClient.createTile(collection.getId(), byocTile).getId();
 
     if (tileIngestedCallback != null) {
@@ -202,6 +200,7 @@ public class ByocIngestor {
     private final GeoJsonObject coverage;
     private final List<InputFile> inputFiles;
   }
+
   @Value
   @Accessors(fluent = true)
   public static class InputFile {
@@ -210,6 +209,7 @@ public class ByocIngestor {
     private final Path file;
     private final List<BandMap> bandMaps;
   }
+
   @RequiredArgsConstructor
   @Getter
   @Accessors(fluent = true)
@@ -232,6 +232,7 @@ public class ByocIngestor {
       return this;
     }
   }
+
   @Value
   @Accessors(fluent = true)
   private static class CogSource {
@@ -240,6 +241,7 @@ public class ByocIngestor {
     private final BandMap bandMap;
     private final Path cogPath;
   }
+
   @Getter
   public static class TileIngestionFailed extends RuntimeException {
 

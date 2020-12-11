@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.*;
-import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.executeWithRetry;
 
 @Log4j2
 public class AuthClient {
@@ -59,8 +58,7 @@ public class AuthClient {
 
     ClientConfig clientConfig =
         new ClientConfig()
-            .register(jsonProvider)
-            .register(new UserAgentRequestFilter());
+            .register(jsonProvider);
 
     httpClient = newHttpClient(clientConfig);
 
@@ -82,14 +80,14 @@ public class AuthClient {
   }
 
   private TokenResponse newAccessToken() {
-    log.info("Fetching an access token");
-
-    Response response = executeWithRetry(() ->
-        httpClient
-            .target(AUTH_SERVICE_BASE_URL)
-            .path("token")
-            .request(MediaType.APPLICATION_JSON_TYPE)
-            .post(Entity.form(formData)));
+    Response response = executeWithRetry(
+        "Fetching an access token",
+        () ->
+            httpClient
+                .target(AUTH_SERVICE_BASE_URL)
+                .path("token")
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .post(Entity.form(formData)));
 
     ensureStatus(response, 200);
 

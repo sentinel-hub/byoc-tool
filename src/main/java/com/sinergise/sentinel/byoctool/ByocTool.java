@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "0.2.8";
+  public static final String VERSION = "0.2.9";
 
   @ArgGroup(exclusive = false)
   private AuthCredentials authCredentials;
