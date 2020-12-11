@@ -32,16 +32,16 @@ public class ByocClient {
     ClientConfig clientConfig =
         new ClientConfig()
             .register(newJsonProvider())
-            .register(new AuthRequestFilter(accessTokenSupplier))
-            .register(new UserAgentRequestFilter());
+            .register(new AuthRequestFilter(accessTokenSupplier));
 
     this.httpClient = newHttpClient(clientConfig);
     this.byocTarget = httpClient.target(byocDeployment.getServiceUrl());
   }
 
   public Optional<ByocCollection> getCollection(String collectionId) {
-    Response response = executeWithRetry(() ->
-        collectionsTarget().path(collectionId).request().get());
+    Response response = executeWithRetry(
+        "Fetching collection",
+        () -> collectionsTarget().path(collectionId).request().get());
 
     if (response.getStatus() == 404) {
       return Optional.empty();
@@ -56,8 +56,9 @@ public class ByocClient {
   }
 
   public Optional<ByocTile> getTile(String collectionId, String tileId) {
-    Response response = executeWithRetry(() ->
-        tileTarget(collectionId, tileId).request().get());
+    Response response = executeWithRetry(
+        "Fetching tile " + tileId,
+        () -> tileTarget(collectionId, tileId).request().get());
 
     if (response.getStatus() == 404) {
       return Optional.empty();
@@ -72,11 +73,13 @@ public class ByocClient {
   }
 
   public Optional<ByocTile> searchTile(String collectionId, String path) {
-    Response response = executeWithRetry(() ->
-        tilesTarget(collectionId)
-            .queryParam("path", path)
-            .request()
-            .get());
+    Response response = executeWithRetry(
+        "Searching for tile " + path,
+        () ->
+            tilesTarget(collectionId)
+                .queryParam("path", path)
+                .request()
+                .get());
 
     return getTilesPage(response)
         .map(ByocResponse::getData)
@@ -102,10 +105,12 @@ public class ByocClient {
   }
 
   public ByocCollection createCollection(ByocCollection collection) {
-    Response response = executeWithRetry(() ->
-        collectionsTarget()
-            .request()
-            .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE)));
+    Response response = executeWithRetry(
+        "Creating collection",
+        () ->
+            collectionsTarget()
+                .request()
+                .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE)));
 
     ensureStatus(response, 201);
 
@@ -114,10 +119,12 @@ public class ByocClient {
   }
 
   public ByocTile createTile(String collectionId, ByocTile tile) {
-    Response response = executeWithRetry(() ->
-        tilesTarget(collectionId)
-            .request()
-            .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
+    Response response = executeWithRetry(
+        "Creating tile " + tile.getPath(),
+        () ->
+            tilesTarget(collectionId)
+                .request()
+                .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
 
     ensureStatus(response, 201);
 
@@ -126,10 +133,12 @@ public class ByocClient {
   }
 
   public void updateTile(String collectionId, ByocTile tile) {
-    Response response = executeWithRetry(() ->
-        tileTarget(collectionId, tile.getId())
-            .request()
-            .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
+    Response response = executeWithRetry(
+        "Updating tile " + tile.getPath(),
+        () ->
+            tileTarget(collectionId, tile.getId())
+                .request()
+                .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
 
     ensureStatus(response, 204);
   }
