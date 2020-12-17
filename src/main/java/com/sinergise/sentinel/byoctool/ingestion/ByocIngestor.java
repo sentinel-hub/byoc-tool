@@ -5,10 +5,7 @@ import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.Value;
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
 import org.geojson.GeoJsonObject;
@@ -174,8 +171,9 @@ public class ByocIngestor {
         .collect(Collectors.toList());
   }
 
+  @SneakyThrows
   private static void uploadWithRetry(S3Client s3, String bucket, String key, Path path) {
-    int i = 0;
+    int retry = 0;
 
     while (true) {
       try {
@@ -183,7 +181,12 @@ public class ByocIngestor {
         s3.putObject(request, RequestBody.fromFile(path));
         return;
       } catch (Exception e) {
-        if (i++ > 2) {
+        if (retry < 4) {
+          retry += 1;
+          log.info("Failed to upload to S3: {}", e.getMessage());
+          TimeUnit.SECONDS.sleep(retry * 10);
+          log.info("Retrying to upload to S3.");
+        } else {
           throw new RuntimeException(e);
         }
       }
