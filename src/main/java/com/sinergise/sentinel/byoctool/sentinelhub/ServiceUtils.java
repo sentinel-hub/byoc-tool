@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sinergise.sentinel.byoctool.ByocTool;
+import com.sinergise.sentinel.byoctool.ingestion.IngestionException;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -93,7 +94,7 @@ class ServiceUtils {
     } while (requestFailed && attempt < 5);
 
     if (requestFailed) {
-      throw new RuntimeException(parseErrorMessage(response));
+      throw new IngestionException(parseErrorMessage(response));
     }
 
     return response;

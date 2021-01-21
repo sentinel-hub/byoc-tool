@@ -3,7 +3,6 @@ package com.sinergise.sentinel.byoctool.cli;
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
-import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.TileIngestionFailed;
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
@@ -70,7 +69,7 @@ public class IngestCmd implements Runnable {
   @Option(
       names = {"--no-compression-predictor"},
       description =
-          "Toggle to disable predictor for compression (more here https://gdal.org/drivers/raster/gtiff.html). When enabled it uses PREDICTOR=2 for integers and PREDICTOR=3 for floating points. By default, the toggle is enabled.")
+          "Disables predictor for compression (more here https://gdal.org/drivers/raster/gtiff.html). When enabled it uses PREDICTOR=2 for integers and PREDICTOR=3 for floating points. By default, the toggle is enabled.")
   private boolean noCompressionPredictor;
 
   @Option(
@@ -93,8 +92,13 @@ public class IngestCmd implements Runnable {
   }
 
   @Option(
+      names = {"--multipart-upload"},
+      description = "Enables multipart upload.")
+  private boolean multipartUpload;
+
+  @Option(
       names = {"--dry-run"},
-      description = "Toggle to skip the ingestion and just print tiles.")
+      description = "Skips the ingestion and just prints found tiles.")
   private boolean dryRun;
 
   @ParentCommand private ByocTool parent;
@@ -154,14 +158,11 @@ public class IngestCmd implements Runnable {
     ByocIngestor ingestor = new ByocIngestor(byocClient, s3Client)
         .setExecutor(executor)
         .setCogFactory(cogFactory)
+        .setMultipartUpload(multipartUpload)
         .setTracingConfig(tracingConfig);
 
     try {
       ingestor.ingest(collectionId, tiles);
-    } catch (TileIngestionFailed e) {
-      log.error(e.getMessage() + " " + String.join(" ", e.getErrors()));
-    } catch (RuntimeException e) {
-      log.error("Failed to ingest tiles.", e);
     } finally {
       executor.shutdown();
       s3Client.close();

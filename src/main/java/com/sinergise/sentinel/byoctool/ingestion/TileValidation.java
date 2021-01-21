@@ -2,57 +2,54 @@ package com.sinergise.sentinel.byoctool.ingestion;
 
 import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
+
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
 
 class TileValidation {
 
-  static Collection<String> validate(List<Path> paths) {
+  static Collection<String> validate(List<Path> paths) throws IOException {
     List<String> errors = new LinkedList<>();
 
-    try {
-      List<TiffCompoundDirectory> ifds = new LinkedList<>();
+    List<TiffCompoundDirectory> ifds = new LinkedList<>();
 
-      for (Path path : paths) {
-        try (ImageInputStream iis = ImageIO.createImageInputStream(path.toFile())) {
-          TiffCompoundDirectory ifd = new TiffCompoundDirectory(iis);
-          ifds.add(ifd);
+    for (Path path : paths) {
+      try (ImageInputStream iis = ImageIO.createImageInputStream(path.toFile())) {
+        TiffCompoundDirectory ifd = new TiffCompoundDirectory(iis);
+        ifds.add(ifd);
 
-          if (ifd.geoAsciiParams() == null) {
-            errors.add(missingGeoParams(path));
-          }
+        if (ifd.geoAsciiParams() == null) {
+          errors.add(missingGeoParams(path));
+        }
 
-          if (ifd.modelTiePoint() == null) {
-            errors.add(missingTiePoint(path));
-          }
+        if (ifd.modelTiePoint() == null) {
+          errors.add(missingTiePoint(path));
+        }
 
-          if (ifd.scale() == null) {
-            errors.add(missingScale(path));
-          }
+        if (ifd.scale() == null) {
+          errors.add(missingScale(path));
         }
       }
+    }
 
-      if (differentValues(ifds, TiffDirectory::geoAsciiParams)) {
-        errors.add(differentGeoParams());
-      } else {
-        Integer epsgCode = GdalSrsInfo.readEpsgCode(paths.get(0));
+    if (differentValues(ifds, TiffDirectory::geoAsciiParams)) {
+      errors.add(differentGeoParams());
+    } else {
+      Integer epsgCode = GdalSrsInfo.readEpsgCode(paths.get(0));
 
-        if (epsgCode == null || !isCrsSupported(epsgCode)) {
-          errors.add(unsupportedEpsgcode(epsgCode));
-        }
+      if (epsgCode == null || !isCrsSupported(epsgCode)) {
+        errors.add(unsupportedEpsgcode(epsgCode));
       }
+    }
 
-      if (differentValues(ifds, TiffDirectory::modelTiePoint)) {
-        errors.add(differentTiePoints());
-      }
-    } catch (IOException e) {
-      throw new RuntimeException("Error occurred during validation", e);
+    if (differentValues(ifds, TiffDirectory::modelTiePoint)) {
+      errors.add(differentTiePoints());
     }
 
     return errors;

@@ -25,7 +25,7 @@ public class ProcessUtil {
 
       int errCode = process.waitFor();
       if (errCode != 0) {
-        throw new RuntimeException(stdOut);
+        throw new IngestionException(stdOut);
       }
 
       return stdOut;
