@@ -34,7 +34,7 @@ import java.time.Duration;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "0.2.10";
+  public static final String VERSION = "0.3.0";
 
   @ArgGroup(exclusive = false)
   private AuthCredentials authCredentials;
