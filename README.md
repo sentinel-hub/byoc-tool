@@ -77,7 +77,6 @@ The `--file-map` parameter allows all bands from the tiff file to be used. In th
 
 To remember: `--file-pattern` finds files using a regular expression. Files with an equal `tile` capture group value are grouped into that one tile. The `--file-map` pattern is then applied to each file within that tile. You can define as many `--file-map` parameters as are files in a tile so that each file can be mapped.
 
-
 ## Tracing Coverage
 
 Information about what coverage tracing is and why it is important is available [here](https://docs.sentinel-hub.com/api/latest/#/API/byoc?id=a-note-about-cover-geometries).
@@ -85,6 +84,12 @@ Information about what coverage tracing is and why it is important is available 
 To enable geometry tracing set the flag `--trace-coverage`. See `--distance-tolerance` and `--negative-buffer` for tuning parameters. If not set, the cover geometry will equal the image bounding box.
 
 To speed up tracing, you can trace coverage from one of image overviews. For example, to trace coverage from the first overview, set the flag `--trace-image-idx 1`.
+
+## S3 Multipart upload
+
+You can enable multipart upload with the flag: `--multipart-upload`. This is recommended if your files are larger than 100MB or if you have an unstable internet connection.
+
+To learn about it, check this page https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html, and if you decided to use it, it is highly recommended setting the bucket lifecycle policy for stopping incomplete multipart uploads https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-stop-incomplete-mpu-lifecycle-config. byoc-tool tries to stop incomplete uploads, if it has time to clean up, otherwise uploads remain active.  
 
 ## Building a jar
 

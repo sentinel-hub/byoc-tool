@@ -5,7 +5,10 @@ import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
-import lombok.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
 import org.geojson.GeoJsonObject;
@@ -41,6 +44,8 @@ public class ByocIngestor {
 
   @Setter private CoverageTracingConfig tracingConfig;
 
+  @Setter private boolean multipartUpload;
+
   @Setter private Consumer<Tile> tileStartCallback;
 
   @Setter private Consumer<Tile> tileIngestedCallback;
@@ -59,21 +64,19 @@ public class ByocIngestor {
 
     List<String> createdTiles = new LinkedList<>();
 
-    try {
-      for (int i = 0; i < futures.size(); i++) {
+    for (int i = 0; i < futures.size(); i++) {
+      try {
         completionService.take().get()
             .ifPresent(createdTiles::add);
-      }
-    } catch (ExecutionException e) {
-      if (e.getCause() instanceof TileIngestionFailed) {
-        throw (TileIngestionFailed) e.getCause();
-      } else {
+      } catch (ExecutionException e) {
+        if (e.getCause() instanceof IngestionException) {
+          log.error(e.getMessage());
+        } else {
+          log.error("Unexpected error occurred", e);
+        }
+      } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    } finally {
-      futures.forEach(f -> f.cancel(true));
     }
 
     return createdTiles;
@@ -95,7 +98,7 @@ public class ByocIngestor {
       Collection<String> errors = TileValidation.validate(tiffFiles);
 
       if (!errors.isEmpty()) {
-        throw new TileIngestionFailed(tile, errors);
+        throw new IngestionException(tile, errors);
       }
     }
 
@@ -115,7 +118,7 @@ public class ByocIngestor {
     Collection<String> errors = TileValidation.validate(cogPaths);
 
     if (!errors.isEmpty()) {
-      throw new TileIngestionFailed(tile, errors);
+      throw new IngestionException(tile, errors);
     }
 
     CoverageCalculator coverageCalculator = null;
@@ -135,7 +138,8 @@ public class ByocIngestor {
 
       String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
       log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
-      uploadWithRetry(s3Client, collection.getS3Bucket(), s3Key, cogPath);
+
+      uploadToS3(collection, cogPath, s3Key);
     }
 
     ByocTile byocTile = new ByocTile();
@@ -171,32 +175,18 @@ public class ByocIngestor {
         .collect(Collectors.toList());
   }
 
-  @SneakyThrows
-  private static void uploadWithRetry(S3Client s3, String bucket, String key, Path path) {
-    int retry = 0;
-
-    while (true) {
-      try {
-        PutObjectRequest request = PutObjectRequest.builder().bucket(bucket).key(key).build();
-        s3.putObject(request, RequestBody.fromFile(path));
-        return;
-      } catch (Exception e) {
-        if (retry < 4) {
-          retry += 1;
-          log.info("Failed to upload to S3: {}", e.getMessage());
-          TimeUnit.SECONDS.sleep(retry * 10);
-          log.info("Retrying to upload to S3.");
-        } else {
-          throw new RuntimeException(e);
-        }
-      }
+  private void uploadToS3(ByocCollection collection, Path cogPath, String s3Key) {
+    if (multipartUpload) {
+      S3MultiPartUploader.upload(s3Client, collection.getS3Bucket(), s3Key, cogPath);
+    } else {
+      PutObjectRequest request = PutObjectRequest.builder().bucket(collection.getS3Bucket()).key(s3Key).build();
+      s3Client.putObject(request, RequestBody.fromFile(cogPath));
     }
   }
 
   @Value
   @Accessors(fluent = true)
   public static class Tile {
-
 
     private final String path;
     private final LocalDateTime sensingTime;
@@ -243,17 +233,5 @@ public class ByocIngestor {
     private final Path inputFile;
     private final BandMap bandMap;
     private final Path cogPath;
-  }
-
-  @Getter
-  public static class TileIngestionFailed extends RuntimeException {
-
-
-    private final Collection<String> errors;
-
-    TileIngestionFailed(Tile tile, Collection<String> errors) {
-      super(String.format("Failed to ingest tile with path %s.", tile.path()));
-      this.errors = errors;
-    }
   }
 }

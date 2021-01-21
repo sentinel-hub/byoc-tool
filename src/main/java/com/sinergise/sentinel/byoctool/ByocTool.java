@@ -13,9 +13,14 @@ import picocli.CommandLine;
 import picocli.CommandLine.*;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.core.retry.backoff.EqualJitterBackoffStrategy;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+
+import java.time.Duration;
 
 @Command(
     name = "byoc-tool",
@@ -112,7 +117,19 @@ public class ByocTool implements Runnable {
               AwsBasicCredentials.create(awsCredentials.accessKey, awsCredentials.secretKey)));
     }
 
-    return s3ClientBuilder.region(region).build();
+    RetryPolicy retryPolicy = RetryPolicy.builder()
+        .numRetries(10)
+        .backoffStrategy(EqualJitterBackoffStrategy.builder()
+            .baseDelay(Duration.ofSeconds(1))
+            .maxBackoffTime(Duration.ofMinutes(10))
+            .build())
+        .build();
+
+    return s3ClientBuilder.region(region)
+        .overrideConfiguration(ClientOverrideConfiguration.builder()
+            .retryPolicy(retryPolicy)
+            .build())
+        .build();
   }
 
   public static void main(String... args) {

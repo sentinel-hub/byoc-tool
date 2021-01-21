@@ -6,13 +6,15 @@
     <Appenders>
         <Console name="stdout" target="SYSTEM_OUT">
             <PatternLayout pattern="${appenderPatternLayout}" />
+            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
         </Console>
         <Console name="stderr" target="SYSTEM_ERR">
             <PatternLayout pattern="${appenderPatternLayout}" />
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.sinergise.sentinel.byoctool" level="INFO" additivity="false">
+        <Logger name="com.sinergise.sentinel.byoctool" level="INFO">
             <AppenderRef ref="stdout"/>
         </Logger>
         <Root level="ERROR">
