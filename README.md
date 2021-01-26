@@ -16,7 +16,7 @@ This readme is targeted towards the Java jar version.
 
 - Your bucket configured so that Sentinel Hub can access data from it -- how to do this is documented [here](https://docs.sentinel-hub.com/api/latest/#/API/byoc?id=configuring-the-bucket). This is necessary because this tool and Sentinel Hub are separate.
 
-- GDAL (https://gdal.org/) installed, at least v2.3.0. Additionally, the `GDAL` and `GDAL_DATA` system environment variables must be set. 
+- GDAL (https://gdal.org/) installed, at least v2.3.0, but it is highly recommend that you install a newer version of GDAL (version 3.1 and newer), as these versions contain a number of improvements. Additionally, the `GDAL` and `GDAL_DATA` system environment variables must be set. 
 
 - Imagery! (Of course)
 
