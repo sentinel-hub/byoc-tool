@@ -73,10 +73,11 @@ class ServiceUtils {
   }
 
   static Response executeWithRetry(String logMessage, Supplier<Response> request) {
-    String logMessageCopy = logMessage;
-    Response response;
+    String logMessageBase = logMessage;
+    Response response = null;
     boolean requestFailed;
     int attempt = 0;
+
     do {
       attempt += 1;
       if (attempt > 1) {
@@ -85,16 +86,25 @@ class ServiceUtils {
         } catch (InterruptedException ignored) {
         }
 
-        logMessage = logMessageCopy + String.format(" (attempt %d)", attempt);
+        logMessage = logMessageBase + String.format(" (attempt %d)", attempt);
       }
 
       log.info(logMessage);
-      response = request.get();
-      requestFailed = response.getStatusInfo().getFamily() == Family.SERVER_ERROR;
+
+      try {
+        response = request.get();
+        requestFailed = response.getStatusInfo().getFamily() == Family.SERVER_ERROR;
+        if (requestFailed) {
+          log.error("API request got back 5xx error: {}.", parseErrorMessage(response));
+        }
+      } catch (Exception e) {
+        requestFailed = true;
+        log.error("Exception occurred while making an API request: {}", e.getMessage());
+      }
     } while (requestFailed && attempt < 5);
 
     if (requestFailed) {
-      throw new IngestionException(parseErrorMessage(response));
+      throw new IngestionException("Failed to execute API request!");
     }
 
     return response;
