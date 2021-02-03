@@ -5,6 +5,7 @@ import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocPage;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
+import lombok.RequiredArgsConstructor;
 import org.glassfish.jersey.client.ClientConfig;
 
 import javax.ws.rs.client.Client;
@@ -36,16 +37,20 @@ public interface ByocClient {
 
   void updateTile(String collectionId, ByocTile tile);
 
+  static ByocClient newByocClient(AuthClient authClient, ByocDeployment byocDeployment) {
+    return new ByocClientImpl(authClient::getAccessToken, byocDeployment);
+  }
+
+  static ByocClient newByocClient(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
+    return new ByocClientImpl(accessTokenSupplier, byocDeployment);
+  }
+
   class ByocClientImpl implements ByocClient {
 
     private final Client httpClient;
     private final WebTarget byocTarget;
 
-    public ByocClientImpl(AuthClient authClient, ByocDeployment byocDeployment) {
-      this(authClient::getAccessToken, byocDeployment);
-    }
-
-    public ByocClientImpl(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
+    private ByocClientImpl(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
       ClientConfig clientConfig =
           new ClientConfig()
               .register(newJsonProvider())

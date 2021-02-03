@@ -5,7 +5,6 @@ import com.sinergise.sentinel.byoctool.cli.ListTilesCmd;
 import com.sinergise.sentinel.byoctool.cli.SetCoverageCmd;
 import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
-import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient.ByocClientImpl;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocDeployment;
 import com.sinergise.sentinel.byoctool.sentinelhub.GlobalByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
@@ -95,7 +94,7 @@ public class ByocTool implements Runnable {
   }
 
   public ByocClient newByocClient(ByocDeployment deployment) {
-    return new ByocClientImpl(getAuthClient(), deployment);
+    return ByocClient.newByocClient(getAuthClient(), deployment);
   }
 
   public ByocClient newByocClient(String collectionId) {
