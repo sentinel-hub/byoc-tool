@@ -1,13 +1,13 @@
 package com.sinergise.sentinel.byoctool.sentinelhub.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.ToString;
+
 import java.util.Map;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
+@Data
 public class ByocCollection implements NoJsonAutoDetect {
 
   @JsonProperty("id")
@@ -25,8 +25,7 @@ public class ByocCollection implements NoJsonAutoDetect {
   @JsonProperty("additionalData")
   private AdditionalData additionalData;
 
-  @Getter
-  @Setter
+  @Data
   public static class AdditionalData {
 
     @JsonProperty("bands")

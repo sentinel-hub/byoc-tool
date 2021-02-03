@@ -2,12 +2,12 @@ package com.sinergise.sentinel.byoctool.sentinelhub.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocDeployment;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import software.amazon.awssdk.regions.Region;
 
-@Getter
-@Setter
+@Data
 public class ByocCollectionInfo {
 
   @JsonProperty("id")

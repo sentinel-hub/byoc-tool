@@ -6,6 +6,7 @@ import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
+import com.sinergise.sentinel.byoctool.utils.JtsUtils;
 import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;
@@ -75,7 +76,8 @@ public class SetCoverageCmd implements Runnable {
       return;
     }
 
-    tile.setJtsCoverGeometry(coverage);
+    tile.setCoverGeometry(JtsUtils.toGeoJson(coverage));
+
     byocClient.updateTile(collectionId, tile);
   }
 

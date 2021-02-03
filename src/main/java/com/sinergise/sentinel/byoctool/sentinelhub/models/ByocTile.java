@@ -4,17 +4,16 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sinergise.sentinel.byoctool.utils.JtsUtils;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.geojson.GeoJsonObject;
-import org.locationtech.jts.geom.Geometry;
 
-@Getter
-@Setter
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@Data
 public class ByocTile implements NoJsonAutoDetect {
 
   public static final String BAND_PLACEHOLDER = "(BAND)";
@@ -56,10 +55,6 @@ public class ByocTile implements NoJsonAutoDetect {
 
   public String bandPath(String band) {
     return getPath().replace(BAND_PLACEHOLDER, band);
-  }
-
-  public void setJtsCoverGeometry(Geometry coverage) {
-    setCoverGeometry(JtsUtils.toGeoJson(coverage));
   }
 
   @Getter
