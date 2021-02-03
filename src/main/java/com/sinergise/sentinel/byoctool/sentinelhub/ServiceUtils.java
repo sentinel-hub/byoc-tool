@@ -7,7 +7,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.ingestion.IngestionException;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError.Error;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.glassfish.jersey.client.ClientConfig;
@@ -18,7 +19,6 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -62,14 +62,23 @@ class ServiceUtils {
 
   static void ensureStatus(Response response, int status) {
     if (response.getStatus() != status) {
-      throw new RuntimeException(parseErrorMessage(response));
+      throw new RuntimeException(getErrorMessage(response));
     }
   }
 
-  private static String parseErrorMessage(Response response) {
-    ByocResponse<?> shResponse = response.readEntity(new GenericType<ByocResponse<?>>() {
-    });
-    return shResponse.getError().getMessage();
+  private static String getErrorMessage(Response response) {
+    Error error = response.readEntity(ByocError.class).getError();
+    return getErrorMessage(error, response.getStatus());
+  }
+
+  static String getErrorMessage(Error error, int statusCode) {
+    String errorMessage = String.format("%s (%d)", error.getMessage(), statusCode);
+
+    if (error.getErrors() != null) {
+      errorMessage = String.format("%s: %s", errorMessage, error.getErrors());
+    }
+
+    return errorMessage;
   }
 
   static Response executeWithRetry(String logMessage, Supplier<Response> request) {
@@ -95,7 +104,7 @@ class ServiceUtils {
         response = request.get();
         requestFailed = response.getStatusInfo().getFamily() == Family.SERVER_ERROR;
         if (requestFailed) {
-          log.error("API request got back 5xx error: {}.", parseErrorMessage(response));
+          log.error("API request got back 5xx error: {}.", getErrorMessage(response));
         }
       } catch (Exception e) {
         requestFailed = true;

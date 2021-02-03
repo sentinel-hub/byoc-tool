@@ -1,5 +1,6 @@
 package com.sinergise.sentinel.byoctool.sentinelhub;
 
+import com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.AuthRequestFilter;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocPage;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocResponse;
@@ -19,143 +20,167 @@ import java.util.function.Supplier;
 
 import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.*;
 
-public class ByocClient {
+public interface ByocClient {
 
-  private final Client httpClient;
-  private final WebTarget byocTarget;
+  Optional<ByocCollection> getCollection(String collectionId);
 
-  public ByocClient(AuthClient authClient, ByocDeployment byocDeployment) {
-    this(authClient::getAccessToken, byocDeployment);
-  }
+  Optional<ByocTile> getTile(String collectionId, String tileId);
 
-  public ByocClient(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
-    ClientConfig clientConfig =
-        new ClientConfig()
-            .register(newJsonProvider())
-            .register(new AuthRequestFilter(accessTokenSupplier));
+  Optional<ByocTile> searchTile(String collectionId, String path);
 
-    this.httpClient = newHttpClient(clientConfig);
-    this.byocTarget = httpClient.target(byocDeployment.getServiceUrl());
-  }
+  Iterator<ByocTile> getTileIterator(String collectionId);
 
-  public Optional<ByocCollection> getCollection(String collectionId) {
-    Response response = executeWithRetry(
-        "Fetching collection",
-        () -> collectionsTarget().path(collectionId).request().get());
+  ByocCollection createCollection(ByocCollection collection);
 
-    if (response.getStatus() == 404) {
-      return Optional.empty();
+  ByocTile createTile(String collectionId, ByocTile tile);
+
+  void updateTile(String collectionId, ByocTile tile);
+
+  class ByocClientImpl implements ByocClient {
+
+    private final Client httpClient;
+    private final WebTarget byocTarget;
+
+    public ByocClientImpl(AuthClient authClient, ByocDeployment byocDeployment) {
+      this(authClient::getAccessToken, byocDeployment);
     }
 
-    ensureStatus(response, 200);
+    public ByocClientImpl(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
+      ClientConfig clientConfig =
+          new ClientConfig()
+              .register(newJsonProvider())
+              .register(new AuthRequestFilter(accessTokenSupplier));
 
-    ByocCollection collection = response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {
-    }).getData();
-
-    return Optional.of(collection);
-  }
-
-  public Optional<ByocTile> getTile(String collectionId, String tileId) {
-    Response response = executeWithRetry(
-        "Fetching tile " + tileId,
-        () -> tileTarget(collectionId, tileId).request().get());
-
-    if (response.getStatus() == 404) {
-      return Optional.empty();
+      this.httpClient = newHttpClient(clientConfig);
+      this.byocTarget = httpClient.target(byocDeployment.getServiceUrl());
     }
 
-    ensureStatus(response, 200);
+    @Override
+    public Optional<ByocCollection> getCollection(String collectionId) {
+      Response response = executeWithRetry(
+          "Fetching collection",
+          () -> collectionsTarget().path(collectionId).request().get());
 
-    ByocTile tile = response.readEntity(new GenericType<ByocResponse<ByocTile>>() {
-    }).getData();
+      if (response.getStatus() == 404) {
+        return Optional.empty();
+      }
 
-    return Optional.of(tile);
-  }
+      ensureStatus(response, 200);
 
-  public Optional<ByocTile> searchTile(String collectionId, String path) {
-    Response response = executeWithRetry(
-        "Searching for tile " + path,
-        () ->
-            tilesTarget(collectionId)
-                .queryParam("path", path)
-                .request()
-                .get());
+      ByocCollection collection = response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {
+      }).getData();
 
-    return getTilesPage(response)
-        .map(ByocResponse::getData)
-        .flatMap(tiles -> tiles.stream().findFirst());
-  }
-
-  static Optional<ByocPage<ByocTile>> getTilesPage(Response response) {
-    if (response.getStatus() == 404) {
-      return Optional.empty();
+      return Optional.of(collection);
     }
 
-    ensureStatus(response, 200);
+    @Override
+    public Optional<ByocTile> getTile(String collectionId, String tileId) {
+      Response response = executeWithRetry(
+          "Fetching tile " + tileId,
+          () -> tileTarget(collectionId, tileId).request().get());
 
-    ByocPage<ByocTile> page = response.readEntity(new GenericType<ByocPage<ByocTile>>() {
-    });
+      if (response.getStatus() == 404) {
+        return Optional.empty();
+      }
 
-    return Optional.of(page);
-  }
+      ensureStatus(response, 200);
 
-  public Iterator<ByocTile> getTileIterator(String collectionId) {
-    URI firstPageUrl = collectionsTarget().path(collectionId).path("tiles").getUri();
-    return new PagingIterator(firstPageUrl, httpClient);
-  }
+      ByocTile tile = response.readEntity(new GenericType<ByocResponse<ByocTile>>() {
+      }).getData();
 
-  public ByocCollection createCollection(ByocCollection collection) {
-    Response response = executeWithRetry(
-        "Creating collection",
-        () ->
-            collectionsTarget()
-                .request()
-                .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE)));
+      return Optional.of(tile);
+    }
 
-    ensureStatus(response, 201);
+    @Override
+    public Optional<ByocTile> searchTile(String collectionId, String path) {
+      Response response = executeWithRetry(
+          "Searching for tile " + path,
+          () ->
+              tilesTarget(collectionId)
+                  .queryParam("path", path)
+                  .request()
+                  .get());
 
-    return response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {
-    }).getData();
-  }
+      return getTilesPage(response)
+          .map(ByocResponse::getData)
+          .flatMap(tiles -> tiles.stream().findFirst());
+    }
 
-  public ByocTile createTile(String collectionId, ByocTile tile) {
-    Response response = executeWithRetry(
-        "Creating tile " + tile.getPath(),
-        () ->
-            tilesTarget(collectionId)
-                .request()
-                .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
+    static Optional<ByocPage<ByocTile>> getTilesPage(Response response) {
+      if (response.getStatus() == 404) {
+        return Optional.empty();
+      }
 
-    ensureStatus(response, 201);
+      ensureStatus(response, 200);
 
-    return response.readEntity(new GenericType<ByocResponse<ByocTile>>() {
-    }).getData();
-  }
+      ByocPage<ByocTile> page = response.readEntity(new GenericType<ByocPage<ByocTile>>() {
+      });
 
-  public void updateTile(String collectionId, ByocTile tile) {
-    Response response = executeWithRetry(
-        "Updating tile " + tile.getPath(),
-        () ->
-            tileTarget(collectionId, tile.getId())
-                .request()
-                .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
+      return Optional.of(page);
+    }
 
-    ensureStatus(response, 204);
-  }
+    @Override
+    public Iterator<ByocTile> getTileIterator(String collectionId) {
+      URI firstPageUrl = collectionsTarget().path(collectionId).path("tiles").getUri();
+      return new PagingIterator(firstPageUrl, httpClient);
+    }
 
-  private WebTarget collectionsTarget() {
-    return byocTarget.path("collections");
-  }
+    @Override
+    public ByocCollection createCollection(ByocCollection collection) {
+      Response response = executeWithRetry(
+          String.format("Creating collection %s (%s)", collection.getName(), collection),
+          () ->
+              collectionsTarget()
+                  .request()
+                  .post(Entity.entity(collection, MediaType.APPLICATION_JSON_TYPE)));
 
-  private WebTarget collectionTarget(String collectionId) {
-    return collectionsTarget().path(collectionId);
-  }
+      ensureStatus(response, 201);
 
-  private WebTarget tilesTarget(String collectionId) {
-    return collectionTarget(collectionId).path("tiles");
-  }
+      return response.readEntity(new GenericType<ByocResponse<ByocCollection>>() {
+      }).getData();
+    }
 
-  private WebTarget tileTarget(String collectionId, String id) {
-    return tilesTarget(collectionId).path(id);
+    @Override
+    public ByocTile createTile(String collectionId, ByocTile tile) {
+      Response response = executeWithRetry(
+          String.format("Creating tile %s (%s)", tile.getPath(), tile),
+          () ->
+              tilesTarget(collectionId)
+                  .request()
+                  .post(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
+
+      ensureStatus(response, 201);
+
+      return response.readEntity(new GenericType<ByocResponse<ByocTile>>() {
+      }).getData();
+    }
+
+    @Override
+    public void updateTile(String collectionId, ByocTile tile) {
+      Response response = executeWithRetry(
+          String.format("Updating tile %s (%s)", tile.getPath(), tile),
+          () ->
+              tileTarget(collectionId, tile.getId())
+                  .request()
+                  .put(Entity.entity(tile, MediaType.APPLICATION_JSON_TYPE)));
+
+      ensureStatus(response, 204);
+    }
+
+    private WebTarget collectionsTarget() {
+      return byocTarget.path("collections");
+    }
+
+    private WebTarget collectionTarget(String collectionId) {
+      return collectionsTarget().path(collectionId);
+    }
+
+    private WebTarget tilesTarget(String collectionId) {
+      return collectionTarget(collectionId).path("tiles");
+    }
+
+    private WebTarget tileTarget(String collectionId, String id) {
+      return tilesTarget(collectionId).path(id);
+    }
   }
 }

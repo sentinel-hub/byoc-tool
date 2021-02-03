@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import static com.sinergise.sentinel.byoctool.sentinelhub.ByocClient.getTilesPage;
+import static com.sinergise.sentinel.byoctool.sentinelhub.ByocClient.ByocClientImpl.getTilesPage;
 import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.executeWithRetry;
 
 class PagingIterator implements Iterator<ByocTile> {

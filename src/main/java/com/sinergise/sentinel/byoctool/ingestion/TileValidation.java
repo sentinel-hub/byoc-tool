@@ -8,13 +8,18 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
-class TileValidation {
+public class TileValidation {
 
-  static Collection<String> validate(List<Path> paths) throws IOException {
+  static Collection<String> validate(Collection<Path> paths) throws IOException {
+    if (paths.isEmpty()) {
+      return Collections.emptyList();
+    }
+
     List<String> errors = new LinkedList<>();
 
     List<TiffCompoundDirectory> ifds = new LinkedList<>();
@@ -41,10 +46,10 @@ class TileValidation {
     if (differentValues(ifds, TiffDirectory::geoAsciiParams)) {
       errors.add(differentGeoParams());
     } else {
-      Integer epsgCode = GdalSrsInfo.readEpsgCode(paths.get(0));
+      Integer epsgCode = GdalSrsInfo.readEpsgCode(paths.iterator().next());
 
       if (epsgCode == null || !isCrsSupported(epsgCode)) {
-        errors.add(unsupportedEpsgcode(epsgCode));
+        errors.add(unsupportedEpsgCode(epsgCode));
       }
     }
 
@@ -83,7 +88,7 @@ class TileValidation {
         "Files have different values in TIFF tag %d.", TiffDirectory.TAG_MODEL_TIE_POINT);
   }
 
-  private static String unsupportedEpsgcode(Integer epsgCode) {
+  private static String unsupportedEpsgCode(Integer epsgCode) {
     return String.format("Files has unsupported crs with EPSG code %d.", epsgCode);
   }
 
