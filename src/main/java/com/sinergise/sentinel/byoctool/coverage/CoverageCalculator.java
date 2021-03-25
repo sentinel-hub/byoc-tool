@@ -7,13 +7,21 @@ import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
@@ -63,6 +71,9 @@ public class CoverageCalculator {
       } else {
         coveragesIntersection = coveragesIntersection.intersection(geometry);
       }
+      coveragesIntersection = removeSmallParts(coveragesIntersection,
+          lowestResolution * lowestResolution,
+          new GeometryFactory(new PrecisionModel(), coveragesIntersection.getSRID()));
     }
   }
 
@@ -94,6 +105,66 @@ public class CoverageCalculator {
     coverage.setSRID(epsgCode);
 
     return coverage;
+  }
+
+  static Geometry removeSmallParts(Geometry geometry, double areaThreshold, GeometryFactory geometryFactory) {
+    List<Geometry> partsToKeep;
+    if (geometry instanceof GeometryCollection) {
+      partsToKeep = removeSmallParts((GeometryCollection) geometry, areaThreshold, geometryFactory);
+    } else if (geometry instanceof Polygon) {
+      partsToKeep = removeSmallParts((Polygon) geometry, areaThreshold, geometryFactory);
+    } else {
+      partsToKeep = Collections.emptyList();
+    }
+    switch (partsToKeep.size()) {
+      case 0:
+        return geometryFactory.createGeometryCollection();
+      case 1:
+        return partsToKeep.get(0);
+      default:
+        return geometryFactory.createGeometryCollection(partsToKeep.toArray(new Geometry[0]));
+    }
+  }
+
+  private static List<Geometry> removeSmallParts(GeometryCollection collection, double areaThreshold,
+      GeometryFactory geometryFactory) {
+    List<Geometry> partsToKeep = new LinkedList<>();
+    for (int i = 0; i < collection.getNumGeometries(); i++) {
+      Geometry part = removeSmallParts(collection.getGeometryN(i), areaThreshold, geometryFactory);
+      if (part instanceof GeometryCollection) {
+        for (int j = 0; j < part.getNumGeometries(); j++) {
+          partsToKeep.add(part.getGeometryN(j));
+        }
+      } else {
+        partsToKeep.add(part);
+      }
+    }
+    return partsToKeep;
+  }
+
+  private static List<Geometry> removeSmallParts(Polygon polygon, double areaThreshold,
+      GeometryFactory geometryFactory) {
+    if (polygon.getArea() < areaThreshold) {
+      return Collections.emptyList();
+    }
+    if (polygon.getNumInteriorRing() > 0) {
+      List<LineString> interiorRingsToKeep = new LinkedList<>();
+      for (int i = 0; i < polygon.getNumInteriorRing(); i++) {
+        LineString interiorRing = polygon.getInteriorRingN(i);
+        double interiorArea = new GeometryFactory().createPolygon(interiorRing.getCoordinates()).getArea();
+        if (interiorArea >= areaThreshold) {
+          interiorRingsToKeep.add(interiorRing);
+        }
+      }
+      if (interiorRingsToKeep.size() < polygon.getNumInteriorRing()) {
+        polygon = new GeometryFactory().createPolygon(
+                geometryFactory.createLinearRing(polygon.getExteriorRing().getCoordinates()),
+                interiorRingsToKeep.stream()
+                        .map(ring -> geometryFactory.createLinearRing(ring.getCoordinates()))
+                        .toArray(LinearRing[]::new));
+      }
+    }
+    return Collections.singletonList(polygon);
   }
 
   private double calculateResolution(TiffCompoundDirectory compoundDirectory, int imageIndex) {
