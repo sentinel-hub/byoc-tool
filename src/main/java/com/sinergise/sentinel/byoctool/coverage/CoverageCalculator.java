@@ -5,18 +5,18 @@ import com.sinergise.sentinel.byoctool.tiff.TiffCompoundDirectory;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory.Scale;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi;
-import java.io.IOException;
-import java.nio.file.Path;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
-
 import lombok.RequiredArgsConstructor;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
+
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class CoverageCalculator {
@@ -61,7 +61,9 @@ public class CoverageCalculator {
         this.tileEnvelope = compoundDirectory.envelope();
         this.epsgCode = compoundDirectory.epsgCode();
       } else {
-        coveragesIntersection = coveragesIntersection.intersection(geometry);
+        coveragesIntersection = collectPolygons(
+                coveragesIntersection.intersection(geometry),
+                new GeometryFactory(new PrecisionModel(), coveragesIntersection.getSRID()));
       }
     }
   }
@@ -94,6 +96,29 @@ public class CoverageCalculator {
     coverage.setSRID(epsgCode);
 
     return coverage;
+  }
+
+  static Geometry collectPolygons(Geometry geometry, GeometryFactory geometryFactory) {
+    List<Polygon> polys = new LinkedList<>();
+    collectPolygons(geometry, polys);
+    switch (polys.size()) {
+      case 0:
+        return geometryFactory.createGeometryCollection();
+      case 1:
+        return polys.get(0);
+      default:
+        return geometryFactory.createMultiPolygon(polys.toArray(new Polygon[0]));
+    }
+  }
+
+  private static void collectPolygons(Geometry geometry, List<Polygon> polygons) {
+    if (geometry instanceof Polygon) {
+      polygons.add((Polygon) geometry);
+    } else if (geometry instanceof GeometryCollection) {
+      for (int i = 0; i < geometry.getNumGeometries(); i++) {
+        collectPolygons(geometry.getGeometryN(i), polygons);
+      }
+    }
   }
 
   private double calculateResolution(TiffCompoundDirectory compoundDirectory, int imageIndex) {
