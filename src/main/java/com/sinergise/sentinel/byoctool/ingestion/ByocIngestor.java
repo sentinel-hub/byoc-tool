@@ -235,6 +235,7 @@ public class ByocIngestor {
     private final String name;
     private int[] overviewLevels;
     private Integer minSize;
+    private String resampling;
 
     public BandMap setOverviewLevels(int[] levels) {
       Objects.requireNonNull(levels);
@@ -244,6 +245,11 @@ public class ByocIngestor {
 
     public BandMap setMinSize(int minSize) {
       this.minSize = minSize;
+      return this;
+    }
+
+    public BandMap setResampling(String resampling) {
+      this.resampling = resampling;
       return this;
     }
   }
