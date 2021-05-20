@@ -29,6 +29,7 @@ test:
 
 publish:
   stage: publish
+  when: manual
   script:
     - ./gradlew publish
   only:
