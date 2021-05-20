@@ -121,12 +121,15 @@ public class CogFactory {
   }
 
   private static void addOverviews(Path inputPath, BandMap bandMap) {
+    String resampling = Optional.ofNullable(bandMap.resampling())
+        .orElse("average");
+
     List<String> cmd =
         new LinkedList<>(
             Arrays.asList(
                 "gdaladdo",
                 "-r",
-                "average",
+                resampling,
                 "--config",
                 "GDAL_TIFF_OVR_BLOCKSIZE",
                 "1024",

@@ -2,6 +2,7 @@ package com.sinergise.sentinel.byoctool.cli;
 
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor;
+import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.BandMap;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -52,6 +54,9 @@ public class IngestCmd implements Runnable {
           "Provides control over which components are used from which files. Files are matched using a pattern and components can then be named. Provide a regular expression for files captured by \"--file-pattern\", one or several component indices and target band names like this: \"<Pattern>;<ComponentIndex1>:<BandName1>;<ComponentIndex2>:<BandName2>\". For example, for an RGB image where you want the band names as R,G,B: <Pattern>;1:R;2:G;3:B\". If omitted, the first component of each file will be used and the band name will equal the file name without extension.",
       paramLabel = "<fileMap>")
   private Collection<String> serializedFileMaps;
+
+  @Option(names = "--resampling", description = "Sets resampling algorithms for COG overviews. Available algorithms are listed here https://gdal.org/programs/gdal_translate.html#cmdoption-gdal_translate-r. If specified only once, it also applies to all bands. Otherwise, you need to repeat as many times as there are bands.", defaultValue = "average")
+  String[] resampling;
 
   @Option(
       names = {"--processing-folder"},
@@ -112,7 +117,8 @@ public class IngestCmd implements Runnable {
     if (serializedFileMaps == null) {
       serializedFileMaps = Collections.singleton("\\.(?i)(tif|tiff|jp2)$");
     }
-    Collection<FileMap> fileMaps = FileMapsDeserialization.deserialize(serializedFileMaps);
+    List<FileMap> fileMaps = FileMapsDeserialization.deserialize(serializedFileMaps);
+    setResampling(fileMaps);
 
     Collection<Tile> tiles;
     try {
@@ -166,6 +172,28 @@ public class IngestCmd implements Runnable {
     } finally {
       executor.shutdown();
       s3Client.close();
+    }
+  }
+
+  void setResampling(List<FileMap> fileMaps) {
+    int bandCount = 0;
+    boolean notEnoughValues = false;
+
+    for (FileMap fileMap : fileMaps) {
+      for (BandMap bandMap : fileMap.bands()) {
+        if (resampling.length == 1) {
+          bandMap.setResampling(resampling[bandCount]);
+        } else if (bandCount < resampling.length) {
+          bandMap.setResampling(resampling[bandCount++]);
+        } else {
+          notEnoughValues = true;
+          break;
+        }
+      }
+    }
+
+    if (notEnoughValues || (resampling.length != 1 && bandCount < resampling.length)) {
+      throw new IllegalArgumentException("--resampling is not configured properly!");
     }
   }
 
