@@ -32,5 +32,3 @@ publish:
   when: manual
   script:
     - ./gradlew publish
-  only:
-    - master
