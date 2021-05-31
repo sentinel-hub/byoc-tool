@@ -43,6 +43,7 @@ public class CogFactory {
       createGeoTiff(inputFile, bandMap.index(), noDataValue, dataType, intermediateFile);
       addOverviews(intermediateFile, bandMap);
       addTiling(intermediateFile, useCompressionPredictor, outputFile);
+      runChecksum(outputFile);
 
       return outputFile;
     } finally {
@@ -191,6 +192,14 @@ public class CogFactory {
       ProcessUtil.runCommand(commandStdTiff.toArray(new String[0]));
     } catch (RuntimeException e) {
       ProcessUtil.runCommand(commandBigTiff.toArray(new String[0]));
+    }
+  }
+
+  static void runChecksum(Path outputFile) {
+    String output = ProcessUtil.runCommand("gdalinfo", "-checksum", outputFile.toString());
+
+    if (output.toLowerCase().contains("checksum value could not be computed")) {
+      throw new RuntimeException("Checksum failed to be computed for file: " + outputFile);
     }
   }
 

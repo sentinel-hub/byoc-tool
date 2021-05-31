@@ -31,7 +31,7 @@ class CogFactoryTest {
       "3,output_B.tiff",
       "4,output_dataMask.tiff"
   })
-  void testMultiBandFile(int bandIndex, String expectedCogResource) {
+  void createCogFromMultiBandFile(int bandIndex, String expectedCogResource) {
     BandMap bandMap = new BandMap(bandIndex, "band").setMinSize(1024);
 
     runCogTest(
@@ -41,7 +41,7 @@ class CogFactoryTest {
   }
 
   @Test
-  void testCustomResampling() {
+  void createCogWithCustomResampling() {
     BandMap bandMap = new BandMap(1, "band")
         .setResampling("mode")
         .setMinSize(128);
