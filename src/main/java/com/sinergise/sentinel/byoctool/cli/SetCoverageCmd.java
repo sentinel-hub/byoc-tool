@@ -2,6 +2,7 @@ package com.sinergise.sentinel.byoctool.cli;
 
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
+import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
@@ -11,7 +12,7 @@ import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,15 +55,14 @@ public class SetCoverageCmd implements Runnable {
         .orElseThrow((() -> new RuntimeException("Tile not found.")));
 
     CoverageCalculator coverageCalculator = new CoverageCalculator(coverageTracingConfig);
-    S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
-
+    ObjectStorageClient objectStorageClient = parent.createObjectStorageClient(collectionInfo);
     log.info("Processing tile {}", tile.idWithPath());
 
     try {
       if (file != null) {
         coverageCalculator.addImage(Paths.get(file));
       } else {
-        processTileBands(collection, tile, s3Client, coverageCalculator);
+        processTileBands(collection, tile, objectStorageClient, coverageCalculator);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -82,14 +82,12 @@ public class SetCoverageCmd implements Runnable {
   }
 
   private void processTileBands(
-      ByocCollection collection, ByocTile tile, S3Client s3, CoverageCalculator coverageCalculator)
+          ByocCollection collection, ByocTile tile, ObjectStorageClient objectStorageClient, CoverageCalculator coverageCalculator)
       throws IOException {
     for (String band : collection.getBands()) {
       String bandPath = tile.bandPath(band);
-      GetObjectRequest request =
-          GetObjectRequest.builder().bucket(collection.getS3Bucket()).key(bandPath).build();
 
-      try (InputStream is = s3.getObject(request)) {
+      try (InputStream is = objectStorageClient.getObjectAsStream(collection, bandPath)) {
         coverageCalculator.addImage(is);
       }
     }

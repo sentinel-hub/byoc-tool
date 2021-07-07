@@ -3,6 +3,8 @@ package com.sinergise.sentinel.byoctool;
 import com.sinergise.sentinel.byoctool.cli.IngestCmd;
 import com.sinergise.sentinel.byoctool.cli.ListTilesCmd;
 import com.sinergise.sentinel.byoctool.cli.SetCoverageCmd;
+import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
+import com.sinergise.sentinel.byoctool.ingestion.storage.S3StorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocDeployment;
@@ -70,7 +72,14 @@ public class ByocTool implements Runnable {
         description =
             "Sentinel Hub auth client secret. Can also be provided in another ways. Check here https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html")
     private String secretKey;
+
+    @Option(
+            names = {"--multipart-upload", "--aws-multipart-upload"},
+            description = "Enables multipart upload.")
+    private boolean multipartUpload;
   }
+
+
 
   private AuthClient authClient;
 
@@ -108,7 +117,18 @@ public class ByocTool implements Runnable {
         .orElseThrow(() -> new RuntimeException("Collection not found."));
   }
 
-  public S3Client newS3Client(Region region) {
+
+  public ObjectStorageClient createObjectStorageClient(ByocCollectionInfo collectionInfo) {
+    if (awsCredentials != null)  {
+      S3StorageClient client =  new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
+      client.setMultipartUpload(awsCredentials.multipartUpload);
+      return client;
+    }
+
+    throw new RuntimeException("Please supply object storage credentials.");
+  }
+
+  private S3Client newS3Client(Region region) {
     S3ClientBuilder s3ClientBuilder = S3Client.builder();
 
     if (awsCredentials != null) {

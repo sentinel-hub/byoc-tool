@@ -1,4 +1,4 @@
-package com.sinergise.sentinel.byoctool.ingestion;
+package com.sinergise.sentinel.byoctool.ingestion.storage;
 
 import lombok.Builder;
 import lombok.extern.log4j.Log4j2;
