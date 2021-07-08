@@ -1,6 +1,5 @@
-package com.sinergise.sentinel.byoctool.ingestion;
+package com.sinergise.sentinel.byoctool.ingestion.storage;
 
-import com.sinergise.sentinel.byoctool.ingestion.storage.S3MultiPartUploader;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
