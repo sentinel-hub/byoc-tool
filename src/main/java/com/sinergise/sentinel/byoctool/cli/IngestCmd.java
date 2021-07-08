@@ -13,7 +13,6 @@ import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine.*;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.IOException;
 import java.nio.file.Files;

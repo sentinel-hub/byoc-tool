@@ -1,8 +1,12 @@
 package com.sinergise.sentinel.byoctool;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.sinergise.sentinel.byoctool.cli.IngestCmd;
 import com.sinergise.sentinel.byoctool.cli.ListTilesCmd;
 import com.sinergise.sentinel.byoctool.cli.SetCoverageCmd;
+import com.sinergise.sentinel.byoctool.ingestion.storage.GCStorageClient;
 import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
 import com.sinergise.sentinel.byoctool.ingestion.storage.S3StorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
@@ -22,6 +26,8 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.Duration;
 
 @Command(
@@ -59,6 +65,8 @@ public class ByocTool implements Runnable {
 
   @ArgGroup(exclusive = false)
   private AwsCredentials awsCredentials;
+  @ArgGroup(exclusive = false)
+  private GcpCredentials gcpCredentials;
 
   private static class AwsCredentials {
     @Option(
@@ -80,6 +88,14 @@ public class ByocTool implements Runnable {
   }
 
 
+
+  private static class GcpCredentials {
+    @Option(
+            names = {"--gcp-key-file"},
+            description =
+                    "GCP service account key file. Check here https://cloud.google.com/iam/docs/creating-managing-service-account-keys")
+    private String keyFilePath;
+  }
 
   private AuthClient authClient;
 
@@ -123,6 +139,15 @@ public class ByocTool implements Runnable {
       S3StorageClient client =  new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
       client.setMultipartUpload(awsCredentials.multipartUpload);
       return client;
+    } else if (gcpCredentials != null) {
+      try {
+        GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(gcpCredentials.keyFilePath));
+        Storage storage = StorageOptions.newBuilder().setCredentials(credentials).build().getService();
+        return new GCStorageClient(storage);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create gcs storage client.", e);
+      }
+
     }
 
     throw new RuntimeException("Please supply object storage credentials.");
