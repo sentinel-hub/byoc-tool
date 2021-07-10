@@ -167,7 +167,7 @@ public class ByocIngestor {
         String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
         log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
 
-        objectStorageClient.store(collection, cogPath, s3Key);
+        objectStorageClient.store(collection.getS3Bucket(), cogPath, s3Key);
       }
 
       if (coverageCalculator != null) {

@@ -87,7 +87,7 @@ public class SetCoverageCmd implements Runnable {
     for (String band : collection.getBands()) {
       String bandPath = tile.bandPath(band);
 
-      try (InputStream is = objectStorageClient.getObjectAsStream(collection, bandPath)) {
+      try (InputStream is = objectStorageClient.getObjectAsStream(collection.getS3Bucket(), bandPath)) {
         coverageCalculator.addImage(is);
       }
     }

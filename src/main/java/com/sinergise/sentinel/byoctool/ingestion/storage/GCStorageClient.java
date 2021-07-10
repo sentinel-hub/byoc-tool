@@ -4,7 +4,6 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import lombok.RequiredArgsConstructor;
 
 import java.io.ByteArrayInputStream;
@@ -17,28 +16,38 @@ public class GCStorageClient implements ObjectStorageClient {
 
     final private Storage storage;
     @Override
-    public void store(ByocCollection collection, Path localCogPath, String objectKey) {
-        BlobId blobId = BlobId.of(collection.getS3Bucket(), objectKey);
+    public void store(String bucketName, Path localCogPath, String objectKey) {
+        BlobId blobId = BlobId.of(bucketName, objectKey);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
         try {
             storage.createFrom(blobInfo, localCogPath);
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to store "+ localCogPath+ " to: gs://"+collection.getS3Bucket()+"/"+objectKey, ex);
+            throw new RuntimeException("Failed to store "+ localCogPath+ " to: gs://"+ bucketName+"/"+objectKey, ex);
         }
     }
 
     @Override
-    public InputStream getObjectAsStream(ByocCollection collection, String key) {
+    public InputStream getObjectAsStream(String bucketName, String key) {
 
-        BlobId objectId = BlobId.of(collection.getS3Bucket(), key);
+        BlobId objectId = BlobId.of(bucketName, key);
         try {
             Blob blob = storage.get(objectId);
             return new ByteArrayInputStream(blob.getContent());
         } catch (Exception ex) {
-            throw new RuntimeException("Failed to read from: gs://"+collection.getS3Bucket()+"/"+key, ex);
+            throw new RuntimeException("Failed to read from: gs://"+ bucketName+"/"+key, ex);
         }
     }
 
+    @Override
+    public void downloadObject(String bucketName, String key, Path target) {
+        BlobId objectId = BlobId.of(bucketName, key);
+        try {
+            Blob blob = storage.get(objectId);
+            blob.downloadTo(target);
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to download: gs://"+ bucketName+"/"+key, ex);
+        }
+    }
     @Override
     public void close() {
     }
