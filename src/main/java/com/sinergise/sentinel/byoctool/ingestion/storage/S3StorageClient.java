@@ -19,7 +19,7 @@ public class S3StorageClient implements ObjectStorageClient {
     private boolean multipartUpload;
 
     @Override
-    public void store(String bucketName, Path cogPath, String s3Key) {
+    public void store(String bucketName, String s3Key, Path cogPath) {
         if (multipartUpload) {
             S3MultiPartUploader.upload(s3Client, bucketName, s3Key, cogPath);
         } else {

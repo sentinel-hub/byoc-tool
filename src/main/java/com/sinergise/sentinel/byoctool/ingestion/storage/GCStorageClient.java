@@ -16,7 +16,7 @@ public class GCStorageClient implements ObjectStorageClient {
 
     final private Storage storage;
     @Override
-    public void store(String bucketName, Path localCogPath, String objectKey) {
+    public void store(String bucketName, String objectKey, Path localCogPath) {
         BlobId blobId = BlobId.of(bucketName, objectKey);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
         try {

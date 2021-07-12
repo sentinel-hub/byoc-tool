@@ -7,13 +7,18 @@ import java.nio.file.Path;
 
 public class TestStorageClient implements ObjectStorageClient {
     @Override
-    public void store(String bucketName, Path localCogPath, String objectKey) {
+    public void store(String bucketName, String objectKey, Path localCogPath) {
 
     }
 
     @Override
     public InputStream getObjectAsStream(String bucketName, String key) {
         return null;
+    }
+
+    @Override
+    public void downloadObject(String bucketName, String key, Path target) {
+
     }
 
     @Override
