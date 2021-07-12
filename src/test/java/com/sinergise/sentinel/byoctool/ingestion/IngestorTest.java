@@ -20,7 +20,7 @@ class IngestorTest {
     collection.setId("collectionId");
     byocClient.addCollection(collection);
 
-    ByocIngestor ingestor = new ByocIngestor(byocClient, new S3ClientStub());
+    ByocIngestor ingestor = new ByocIngestor(byocClient, new TestStorageClient());
 
     Tile tile = Tile.builder()
         .path("tilePath")
@@ -83,7 +83,7 @@ class IngestorTest {
 
     List<Tile> ingestedTiles = new LinkedList<>();
 
-    ByocIngestor ingestor = new ByocIngestor(byocClient, new S3ClientStub());
+    ByocIngestor ingestor = new ByocIngestor(byocClient, new TestStorageClient());
     ingestor.setOnTileIngested(ingestedTiles::add);
 
     Collection<String> tileIds = ingestor.ingest(collection.getId(), Arrays.asList(badTile, goodTile));

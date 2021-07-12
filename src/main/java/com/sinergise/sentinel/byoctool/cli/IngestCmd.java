@@ -7,12 +7,12 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
+import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
 import lombok.extern.log4j.Log4j2;
 import picocli.CommandLine.*;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -97,11 +97,6 @@ public class IngestCmd implements Runnable {
   }
 
   @Option(
-      names = {"--multipart-upload"},
-      description = "Enables multipart upload.")
-  private boolean multipartUpload;
-
-  @Option(
       names = {"--dry-run"},
       description = "Skips the ingestion and just prints found tiles.")
   private boolean dryRun;
@@ -152,7 +147,8 @@ public class IngestCmd implements Runnable {
 
     ByocCollectionInfo collectionInfo = parent.getCollectionInfo(collectionId);
     ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
-    S3Client s3Client = parent.newS3Client(collectionInfo.getS3Region());
+
+    ObjectStorageClient objectStorageClient = parent.createObjectStorageClient(collectionInfo);
 
     CogFactory cogFactory = new CogFactory()
         .setNoDataValue(noDataValue)
@@ -161,17 +157,16 @@ public class IngestCmd implements Runnable {
 
     ExecutorService executor = Executors.newFixedThreadPool(nThreads);
 
-    ByocIngestor ingestor = new ByocIngestor(byocClient, s3Client)
+    ByocIngestor ingestor = new ByocIngestor(byocClient, objectStorageClient)
         .setExecutor(executor)
         .setCogFactory(cogFactory)
-        .setMultipartUpload(multipartUpload)
         .setTracingConfig(tracingConfig);
 
     try {
       ingestor.ingest(collectionId, tiles);
     } finally {
       executor.shutdown();
-      s3Client.close();
+      objectStorageClient.close();
     }
   }
 

@@ -1,8 +1,14 @@
 package com.sinergise.sentinel.byoctool;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.sinergise.sentinel.byoctool.cli.IngestCmd;
 import com.sinergise.sentinel.byoctool.cli.ListTilesCmd;
 import com.sinergise.sentinel.byoctool.cli.SetCoverageCmd;
+import com.sinergise.sentinel.byoctool.ingestion.storage.GCStorageClient;
+import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
+import com.sinergise.sentinel.byoctool.ingestion.storage.S3StorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.AuthClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocDeployment;
@@ -20,15 +26,15 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.Duration;
 
 @Command(
     name = "byoc-tool",
     version = ByocTool.VERSION,
     description =
-        "Utility tool for Sentinel Hub BYOC service."
-            + "If you are accessing AWS S3, then provide credentials in the environment variables "
-            + "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.",
+        "Utility tool for Sentinel Hub BYOC service.",
     mixinStandardHelpOptions = true,
     subcommands = {ListTilesCmd.class, SetCoverageCmd.class, IngestCmd.class, HelpCommand.class})
 @Log4j2
@@ -57,6 +63,8 @@ public class ByocTool implements Runnable {
 
   @ArgGroup(exclusive = false)
   private AwsCredentials awsCredentials;
+  @ArgGroup(exclusive = false)
+  private GcpCredentials gcpCredentials;
 
   private static class AwsCredentials {
     @Option(
@@ -68,8 +76,23 @@ public class ByocTool implements Runnable {
     @Option(
         names = {"--aws-secret-access-key"},
         description =
-            "Sentinel Hub auth client secret. Can also be provided in another ways. Check here https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html")
+            "AWS secret access key. Can also be provided in another ways. Check here https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html")
     private String secretKey;
+
+    @Option(
+            names = {"--multipart-upload", "--aws-multipart-upload"},
+            description = "Enables multipart upload.")
+    private boolean multipartUpload;
+  }
+
+
+
+  private static class GcpCredentials {
+    @Option(
+            names = {"--gcp-key-file"},
+            description =
+                    "GCP service account key file. Check here https://cloud.google.com/iam/docs/creating-managing-service-account-keys")
+    private String keyFilePath;
   }
 
   private AuthClient authClient;
@@ -108,7 +131,24 @@ public class ByocTool implements Runnable {
         .orElseThrow(() -> new RuntimeException("Collection not found."));
   }
 
-  public S3Client newS3Client(Region region) {
+
+  public ObjectStorageClient createObjectStorageClient(ByocCollectionInfo collectionInfo) {
+    if (gcpCredentials != null) {
+      try {
+        GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(gcpCredentials.keyFilePath));
+        Storage storage = StorageOptions.newBuilder().setCredentials(credentials).build().getService();
+        return new GCStorageClient(storage);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create gcs storage client.", e);
+      }
+    } else {
+      S3StorageClient client = new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
+      client.setMultipartUpload(awsCredentials.multipartUpload);
+      return client;
+    }
+  }
+
+  private S3Client newS3Client(Region region) {
     S3ClientBuilder s3ClientBuilder = S3Client.builder();
 
     if (awsCredentials != null) {

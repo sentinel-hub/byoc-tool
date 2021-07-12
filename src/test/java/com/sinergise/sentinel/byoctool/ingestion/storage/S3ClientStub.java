@@ -1,4 +1,4 @@
-package com.sinergise.sentinel.byoctool.ingestion;
+package com.sinergise.sentinel.byoctool.ingestion.storage;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;

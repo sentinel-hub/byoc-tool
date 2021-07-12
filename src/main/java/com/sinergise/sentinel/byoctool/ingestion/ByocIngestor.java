@@ -2,6 +2,7 @@ package com.sinergise.sentinel.byoctool.ingestion;
 
 import com.sinergise.sentinel.byoctool.cli.CoverageTracingConfig;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
+import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
@@ -33,8 +34,7 @@ public class ByocIngestor {
   private static final Pattern TIFF_FILE_PATTERN = Pattern.compile("\\.(?i)tiff?$");
 
   private final ByocClient byocClient;
-
-  private final S3Client s3Client;
+  private final ObjectStorageClient objectStorageClient;
 
   @Setter
   private Executor executor = ForkJoinPool.commonPool();
@@ -44,9 +44,6 @@ public class ByocIngestor {
 
   @Setter
   private CoverageTracingConfig tracingConfig;
-
-  @Setter
-  private boolean multipartUpload;
 
   @Setter
   private Consumer<Tile> onTileIngestionStarted;
@@ -170,7 +167,7 @@ public class ByocIngestor {
         String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
         log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
 
-        uploadToS3(collection, cogPath, s3Key);
+        objectStorageClient.store(collection.getS3Bucket(), s3Key, cogPath);
       }
 
       if (coverageCalculator != null) {
@@ -197,14 +194,7 @@ public class ByocIngestor {
       }
     }
 
-    private void uploadToS3(ByocCollection collection, Path cogPath, String s3Key) {
-      if (multipartUpload) {
-        S3MultiPartUploader.upload(s3Client, collection.getS3Bucket(), s3Key, cogPath);
-      } else {
-        PutObjectRequest request = PutObjectRequest.builder().bucket(collection.getS3Bucket()).key(s3Key).build();
-        s3Client.putObject(request, RequestBody.fromFile(cogPath));
-      }
-    }
+
   }
 
   @Value

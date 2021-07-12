@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.sinergise.sentinel'
-version = '0.6.0'
+version = '0.7.5'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -38,12 +38,16 @@ shadowJar {
 
 ext {
     jerseyVersion = '2.28'
-    lombokVersion = '1.18.8'
+    lombokVersion = '1.18.16'
     log4jVersion = '2.12.1'
     junitVersion = '5.5.2'
 }
 
 dependencies {
+
+    implementation platform('com.google.cloud:libraries-bom:20.4.0')
+    implementation platform('io.grpc:grpc-bom:1.37.1')
+    compile 'com.google.cloud:google-cloud-storage'
 
     implementation "info.picocli:picocli:4.0.4"
     implementation "org.locationtech.jts:jts-core:1.16.1"

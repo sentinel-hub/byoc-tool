@@ -1,4 +1,4 @@
-package com.sinergise.sentinel.byoctool.ingestion;
+package com.sinergise.sentinel.byoctool.ingestion.storage;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
