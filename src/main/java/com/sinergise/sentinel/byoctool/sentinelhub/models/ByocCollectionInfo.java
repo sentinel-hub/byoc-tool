@@ -42,6 +42,8 @@ public class ByocCollectionInfo {
         return ByocDeployment.AWS_EU_CENTRAL_1;
       case "aws-us-west-2":
         return ByocDeployment.AWS_US_WEST_2;
+      case "gcp-us-central1":
+        return ByocDeployment.GCP_US_CENTRAL1;
       default:
         throw new RuntimeException("Unexpected location " + location);
     }
