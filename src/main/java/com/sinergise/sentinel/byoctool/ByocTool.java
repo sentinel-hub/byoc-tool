@@ -34,9 +34,7 @@ import java.time.Duration;
     name = "byoc-tool",
     version = ByocTool.VERSION,
     description =
-        "Utility tool for Sentinel Hub BYOC service."
-            + "If you are accessing AWS S3, then provide credentials in the environment variables "
-            + "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.",
+        "Utility tool for Sentinel Hub BYOC service.",
     mixinStandardHelpOptions = true,
     subcommands = {ListTilesCmd.class, SetCoverageCmd.class, IngestCmd.class, HelpCommand.class})
 @Log4j2
@@ -78,7 +76,7 @@ public class ByocTool implements Runnable {
     @Option(
         names = {"--aws-secret-access-key"},
         description =
-            "Sentinel Hub auth client secret. Can also be provided in another ways. Check here https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html")
+            "AWS secret access key. Can also be provided in another ways. Check here https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html")
     private String secretKey;
 
     @Option(
