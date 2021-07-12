@@ -135,11 +135,7 @@ public class ByocTool implements Runnable {
 
 
   public ObjectStorageClient createObjectStorageClient(ByocCollectionInfo collectionInfo) {
-    if (awsCredentials != null)  {
-      S3StorageClient client =  new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
-      client.setMultipartUpload(awsCredentials.multipartUpload);
-      return client;
-    } else if (gcpCredentials != null) {
+    if (gcpCredentials != null) {
       try {
         GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(gcpCredentials.keyFilePath));
         Storage storage = StorageOptions.newBuilder().setCredentials(credentials).build().getService();
@@ -147,10 +143,11 @@ public class ByocTool implements Runnable {
       } catch (IOException e) {
         throw new RuntimeException("Unable to create gcs storage client.", e);
       }
-
+    } else {
+      S3StorageClient client = new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
+      client.setMultipartUpload(awsCredentials.multipartUpload);
+      return client;
     }
-
-    throw new RuntimeException("Please supply object storage credentials.");
   }
 
   private S3Client newS3Client(Region region) {
