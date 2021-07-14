@@ -8,6 +8,7 @@ import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
 import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
+import com.sinergise.sentinel.byoctool.ingestion.storage.S3StorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollectionInfo;
 import com.sinergise.sentinel.byoctool.tiff.TiffDirectory;
@@ -97,6 +98,11 @@ public class IngestCmd implements Runnable {
   }
 
   @Option(
+      names = {"--multipart-upload", "--aws-multipart-upload"},
+      description = "Enables multipart upload for AWS.")
+  private boolean multipartUpload;
+
+  @Option(
       names = {"--dry-run"},
       description = "Skips the ingestion and just prints found tiles.")
   private boolean dryRun;
@@ -148,7 +154,11 @@ public class IngestCmd implements Runnable {
     ByocCollectionInfo collectionInfo = parent.getCollectionInfo(collectionId);
     ByocClient byocClient = parent.newByocClient(collectionInfo.getDeployment());
 
-    ObjectStorageClient objectStorageClient = parent.createObjectStorageClient(collectionInfo);
+    ObjectStorageClient objectStorageClient = parent.newObjectStorageClient(collectionInfo);
+
+    if (multipartUpload && objectStorageClient instanceof S3StorageClient) {
+      ((S3StorageClient) objectStorageClient).setMultipartUpload(multipartUpload);
+    }
 
     CogFactory cogFactory = new CogFactory()
         .setNoDataValue(noDataValue)

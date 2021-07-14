@@ -40,7 +40,7 @@ import java.time.Duration;
 @Log4j2
 public class ByocTool implements Runnable {
 
-  public static final String VERSION = "0.6.0";
+  public static final String VERSION = "0.7.0";
 
   @ArgGroup(exclusive = false)
   private AuthCredentials authCredentials;
@@ -78,27 +78,21 @@ public class ByocTool implements Runnable {
         description =
             "AWS secret access key. Can also be provided in another ways. Check here https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html")
     private String secretKey;
-
-    @Option(
-            names = {"--multipart-upload", "--aws-multipart-upload"},
-            description = "Enables multipart upload.")
-    private boolean multipartUpload;
   }
-
-
 
   private static class GcpCredentials {
     @Option(
-            names = {"--gcp-key-file"},
-            description =
-                    "GCP service account key file. Check here https://cloud.google.com/iam/docs/creating-managing-service-account-keys")
+        names = {"--gcp-key-file"},
+        description =
+            "GCP service account key file. Check here https://cloud.google.com/iam/docs/creating-managing-service-account-keys")
     private String keyFilePath;
   }
 
   private AuthClient authClient;
 
   @Override
-  public void run() {}
+  public void run() {
+  }
 
   protected AuthClient newAuthClient() {
     if (authCredentials != null) {
@@ -131,8 +125,7 @@ public class ByocTool implements Runnable {
         .orElseThrow(() -> new RuntimeException("Collection not found."));
   }
 
-
-  public ObjectStorageClient createObjectStorageClient(ByocCollectionInfo collectionInfo) {
+  public ObjectStorageClient newObjectStorageClient(ByocCollectionInfo collectionInfo) {
     if (gcpCredentials != null) {
       try {
         GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(gcpCredentials.keyFilePath));
@@ -142,9 +135,7 @@ public class ByocTool implements Runnable {
         throw new RuntimeException("Unable to create gcs storage client.", e);
       }
     } else {
-      S3StorageClient client = new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
-      client.setMultipartUpload(awsCredentials.multipartUpload);
-      return client;
+      return new S3StorageClient(newS3Client(collectionInfo.getS3Region()));
     }
   }
 
