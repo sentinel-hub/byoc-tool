@@ -1,178 +1,98 @@
 package com.sinergise.sentinel.byoctool.ingestion.storage;
 
-import lombok.Builder;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.File;
+import java.io.FileInputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+import java.util.LinkedList;
 
 @Log4j2
-@Builder
+@RequiredArgsConstructor
 public class S3MultiPartUploader {
 
-  private final S3Client s3;
+  private final S3Client s3Client;
 
-  @Builder.Default
-  private final int bufferSize = 5 * 1024 * 1024;
+  @Setter
+  private int partSizeInMb = 5;
 
-  void upload(String bucketName, String key, Path filePath) {
-    try (InputStream fis = Files.newInputStream(filePath)) {
-      upload(bucketName, key, fis);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
+  public void upload(String bucketName, String key, File file) {
+    CreateMultipartUploadRequest createMultipartUploadRequest = CreateMultipartUploadRequest.builder()
+        .bucket(bucketName)
+        .key(key)
+        .build();
 
-  void upload(String bucketName, String key, InputStream stream) {
-    MultiPartUpload upload = new MultiPartUpload(bucketName, key, stream);
+    CreateMultipartUploadResponse response = s3Client.createMultipartUpload(createMultipartUploadRequest);
+    String uploadId = response.uploadId();
 
-    Thread thread = new Thread(upload::abortUpload);
-    Runtime.getRuntime().addShutdownHook(thread);
-    upload.upload();
-    Runtime.getRuntime().removeShutdownHook(thread);
-  }
+    LinkedList<CompletedPart> parts = new LinkedList<>();
+    int bufferSize = partSizeInMb * 1024 * 1024;
 
-  class MultiPartUpload {
+    try (FileInputStream fis = new FileInputStream(file);
+         BufferedInputStream bis = new BufferedInputStream(fis)) {
 
-    private final String bucketName;
-    private final String key;
-    private final InputStream stream;
-    private final ArrayList<CompletedPart> parts = new ArrayList<>();
+      byte[] buffer = new byte[bufferSize];
+      int bytesRead;
+      while ((bytesRead = bis.read(buffer)) > 0) {
+        int partNumber = parts.size() + 1;
 
-    private String uploadId;
-    private boolean completed;
-    private boolean abortInitiated;
+        UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+            .bucket(bucketName)
+            .key(key)
+            .uploadId(uploadId)
+            .partNumber(partNumber)
+            .contentMD5(bufferMD5Sum(buffer, bytesRead))
+            .build();
 
-    MultiPartUpload(String bucketName, String key, InputStream stream) {
-      this.bucketName = bucketName;
-      this.key = key;
-      this.stream = stream;
-    }
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead);
+        UploadPartResponse uploadPartResponse = s3Client
+            .uploadPart(uploadPartRequest, RequestBody.fromByteBuffer(byteBuffer));
 
-    void upload() {
-      try {
-        createUpload();
-        uploadParts();
-        completeUpload();
-      } catch (Exception ex) {
-        abortUpload();
-        throw new RuntimeException("Multipart upload failed due to: " + ex.getMessage(), ex);
+        CompletedPart part = CompletedPart.builder()
+            .partNumber(partNumber)
+            .eTag(uploadPartResponse.eTag())
+            .build();
+
+        parts.add(part);
       }
-    }
-
-    private synchronized void createUpload() {
-      if (abortInitiated) {
-        return;
-      }
-
-      CreateMultipartUploadRequest createMultipartUploadRequest = CreateMultipartUploadRequest.builder()
-          .bucket(bucketName)
-          .key(key)
-          .build();
-
-      CreateMultipartUploadResponse response = s3.createMultipartUpload(createMultipartUploadRequest);
-
-      uploadId = response.uploadId();
-
-      log.info("Creating multipart upload {}", uploadId);
-    }
-
-    private void uploadParts() throws IOException {
-      try (BufferedInputStream bis = new BufferedInputStream(stream)) {
-        byte[] buffer = new byte[bufferSize];
-        int bytesRead;
-        while ((bytesRead = bis.read(buffer)) > 0) {
-          int partNumber = parts.size() + 1;
-          ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead);
-
-          synchronized (this) {
-            if (abortInitiated) {
-              break;
-            }
-            uploadPart(partNumber, byteBuffer);
-          }
-        }
-      }
-    }
-
-    private synchronized void uploadPart(int partNumber, ByteBuffer byteBuffer) {
-      UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
-          .bucket(bucketName)
-          .key(key)
-          .uploadId(uploadId)
-          .partNumber(partNumber)
-          .build();
-
-      UploadPartResponse uploadResponse = s3.uploadPart(uploadPartRequest, RequestBody.fromByteBuffer(byteBuffer));
-
-      CompletedPart part = CompletedPart.builder()
-          .partNumber(partNumber)
-          .eTag(uploadResponse.eTag())
-          .build();
-
-      parts.add(part);
-    }
-
-    private synchronized void completeUpload() {
-      if (abortInitiated) {
-        return;
-      }
-
-      CompletedMultipartUpload completedMultipartUpload = CompletedMultipartUpload.builder()
-          .parts(parts)
-          .build();
-
-      CompleteMultipartUploadRequest completeMultipartUploadRequest =
-          CompleteMultipartUploadRequest.builder()
-              .bucket(bucketName)
-              .key(key)
-              .uploadId(uploadId)
-              .multipartUpload(completedMultipartUpload)
-              .build();
-
-      s3.completeMultipartUpload(completeMultipartUploadRequest);
-
-      completed = true;
-    }
-
-    private synchronized void abortUpload() {
-      abortInitiated = true;
-
-      if (uploadId == null || completed) {
-        return;
-      }
-
-      log.info("Aborting multipart upload {}", uploadId);
-
+    } catch (Exception ex) {
       AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
           .bucket(bucketName)
           .key(key)
           .uploadId(uploadId)
           .build();
 
-      try {
-        s3.abortMultipartUpload(abortRequest);
-        log.info("Multipart upload aborted: " + uploadId);
-      } catch (Exception ex) {
-        log.error("Failed to abort multipart upload {}", uploadId, ex);
-      }
+      s3Client.abortMultipartUpload(abortRequest);
+      throw new RuntimeException("Multipart upload failed!", ex);
     }
-  }
 
-  static void upload(S3Client s3, String bucketName, String key, Path filePath) {
-    S3MultiPartUploader uploader = S3MultiPartUploader.builder()
-        .s3(s3)
+    CompletedMultipartUpload completedMultipartUpload = CompletedMultipartUpload.builder()
+        .parts(parts)
         .build();
 
-    uploader.upload(bucketName, key, filePath);
+    CompleteMultipartUploadRequest completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder()
+        .bucket(bucketName)
+        .key(key)
+        .uploadId(uploadId)
+        .multipartUpload(completedMultipartUpload)
+        .build();
+
+    s3Client.completeMultipartUpload(completeMultipartUploadRequest);
+  }
+
+  private String bufferMD5Sum(byte[] buffer, int bytesRead) throws NoSuchAlgorithmException {
+    MessageDigest md = MessageDigest.getInstance("MD5");
+    md.update(buffer, 0, bytesRead);
+
+    return Base64.getEncoder().encodeToString(md.digest());
   }
 }

@@ -14,41 +14,55 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class GCStorageClient implements ObjectStorageClient {
 
-    final private Storage storage;
-    @Override
-    public void store(String bucketName, String objectKey, Path localCogPath) {
-        BlobId blobId = BlobId.of(bucketName, objectKey);
-        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
-        try {
-            storage.createFrom(blobInfo, localCogPath);
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to store "+ localCogPath+ " to: gs://"+ bucketName+"/"+objectKey, ex);
-        }
-    }
+  private final Storage storage;
 
-    @Override
-    public InputStream getObjectAsStream(String bucketName, String key) {
+  @Override
+  public void store(String bucketName, String objectKey, Path localCogPath) {
+    BlobId blobId = BlobId.of(bucketName, objectKey);
+    BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+    try {
+      storage.createFrom(blobInfo, localCogPath);
+    } catch (IOException ex) {
+      throw new RuntimeException("Failed to store " + localCogPath + " to: gs://" + bucketName + "/" + objectKey, ex);
+    }
+  }
 
-        BlobId objectId = BlobId.of(bucketName, key);
-        try {
-            Blob blob = storage.get(objectId);
-            return new ByteArrayInputStream(blob.getContent());
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to read from: gs://"+ bucketName+"/"+key, ex);
-        }
+  @Override
+  public void store(String bucketName, String objectKey, byte[] data) {
+    BlobId blobId = BlobId.of(bucketName, objectKey);
+    BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+    try {
+      storage.createFrom(blobInfo, new ByteArrayInputStream(data));
+    } catch (IOException ex) {
+      throw new RuntimeException("Failed to store data to: gs://"+ bucketName+"/"+objectKey, ex);
     }
+  }
 
-    @Override
-    public void downloadObject(String bucketName, String key, Path target) {
-        BlobId objectId = BlobId.of(bucketName, key);
-        try {
-            Blob blob = storage.get(objectId);
-            blob.downloadTo(target);
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to download: gs://"+ bucketName+"/"+key, ex);
-        }
+
+  @Override
+  public InputStream getObjectAsStream(String bucketName, String key) {
+
+    BlobId objectId = BlobId.of(bucketName, key);
+    try {
+      Blob blob = storage.get(objectId);
+      return new ByteArrayInputStream(blob.getContent());
+    } catch (Exception ex) {
+      throw new RuntimeException("Failed to read from: gs://" + bucketName + "/" + key, ex);
     }
-    @Override
-    public void close() {
+  }
+
+  @Override
+  public void downloadObject(String bucketName, String key, Path target) {
+    BlobId objectId = BlobId.of(bucketName, key);
+    try {
+      Blob blob = storage.get(objectId);
+      blob.downloadTo(target);
+    } catch (Exception ex) {
+      throw new RuntimeException("Failed to download: gs://" + bucketName + "/" + key, ex);
     }
+  }
+
+  @Override
+  public void close() {
+  }
 }

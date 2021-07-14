@@ -11,9 +11,6 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.log4j.Log4j2;
 import org.geojson.GeoJsonObject;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -193,8 +190,6 @@ public class ByocIngestor {
         throw new IngestionException(tile, errors);
       }
     }
-
-
   }
 
   @Value

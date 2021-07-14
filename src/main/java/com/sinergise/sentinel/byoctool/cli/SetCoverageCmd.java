@@ -11,7 +11,6 @@ import com.sinergise.sentinel.byoctool.utils.JtsUtils;
 import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;
-import software.amazon.awssdk.services.s3.S3Client;
 
 
 import java.io.IOException;
@@ -55,7 +54,7 @@ public class SetCoverageCmd implements Runnable {
         .orElseThrow((() -> new RuntimeException("Tile not found.")));
 
     CoverageCalculator coverageCalculator = new CoverageCalculator(coverageTracingConfig);
-    ObjectStorageClient objectStorageClient = parent.createObjectStorageClient(collectionInfo);
+    ObjectStorageClient objectStorageClient = parent.newObjectStorageClient(collectionInfo);
     log.info("Processing tile {}", tile.idWithPath());
 
     try {
