@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
 @Data
-public class ByocError {
+public class ByocErrorResponse {
 
   @JsonProperty("error")
-  private Error error;
+  private ByocError error;
 
   @Data
-  public static class Error {
+  public static class ByocError {
 
     @JsonProperty("message")
     private String message;

@@ -7,8 +7,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.ingestion.IngestionException;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError.Error;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocErrorResponse;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocErrorResponse.ByocError;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.glassfish.jersey.client.ClientConfig;
@@ -67,11 +67,11 @@ public class ServiceUtils {
   }
 
   private static String getErrorMessage(Response response) {
-    Error error = response.readEntity(ByocError.class).getError();
+    ByocError error = response.readEntity(ByocErrorResponse.class).getError();
     return getErrorMessage(error, response.getStatus());
   }
 
-  public static String getErrorMessage(Error error, int statusCode) {
+  public static String getErrorMessage(ByocError error, int statusCode) {
     String errorMessage = String.format("%s (%d)", error.getMessage(), statusCode);
 
     if (error.getErrors() != null) {
