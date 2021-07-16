@@ -33,7 +33,8 @@ class ByocErrorResponseTest {
     ByocErrorResponse errorResponse = objectMapper
         .readValue("{ \"error\": { \"errors\": { \"field\": \"error occurred\", \"field2\": \"another error\" }}}", ByocErrorResponse.class);
 
-    assertEquals("{\"field\":\"error occurred\",\"field2\":\"another error\"}", errorResponse.getError().getErrors().toString());
+    assertEquals("{\"field\":\"error occurred\",\"field2\":\"another error\"}",
+        errorResponse.getError().getErrors().toString());
   }
 
   @Test
@@ -49,4 +50,4 @@ class ByocErrorResponseTest {
 
     assertEquals("error occurred (404): {\"field\":\"bad value\"}", errorMessage);
   }
- }
+}
