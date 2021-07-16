@@ -91,7 +91,7 @@ class ServiceUtils {
       attempt += 1;
       if (attempt > 1) {
         try {
-          TimeUnit.SECONDS.sleep((attempt - 1) * 10);
+          TimeUnit.SECONDS.sleep((attempt - 1) * 10L);
         } catch (InterruptedException ignored) {
         }
 
