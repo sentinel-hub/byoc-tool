@@ -2,14 +2,13 @@ package com.sinergise.sentinel.byoctool.sentinelhub.models;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.geojson.GeoJsonObject;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,8 +27,7 @@ public class ByocTile implements NoJsonAutoDetect {
   private String status;
 
   @JsonProperty("sensingTime")
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-  private LocalDateTime sensingTime;
+  private Instant sensingTime;
 
   @JsonProperty("coverGeometry")
   private GeoJsonObject coverGeometry;
