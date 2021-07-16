@@ -12,7 +12,6 @@ import lombok.extern.log4j.Log4j2;
 import org.locationtech.jts.geom.Geometry;
 import picocli.CommandLine.*;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -55,7 +54,7 @@ public class SetCoverageCmd implements Runnable {
 
     CoverageCalculator coverageCalculator = new CoverageCalculator(coverageTracingConfig);
     ObjectStorageClient objectStorageClient = parent.newObjectStorageClient(collectionInfo);
-    log.info("Processing tile {}", tile.idWithPath());
+    log.info("Processing tile {} (id = {})", tile.getPath(), tile.getId());
 
     try {
       if (file != null) {
@@ -80,11 +79,10 @@ public class SetCoverageCmd implements Runnable {
     byocClient.updateTile(collectionId, tile);
   }
 
-  private void processTileBands(
-          ByocCollection collection, ByocTile tile, ObjectStorageClient objectStorageClient, CoverageCalculator coverageCalculator)
-      throws IOException {
+  private void processTileBands(ByocCollection collection, ByocTile tile, ObjectStorageClient objectStorageClient,
+      CoverageCalculator coverageCalculator) throws IOException {
     for (String band : collection.getBands()) {
-      String bandPath = tile.bandPath(band);
+      String bandPath = tile.getPath().replace(ByocTile.BAND_PLACEHOLDER, band);
 
       try (InputStream is = objectStorageClient.getObjectAsStream(collection.getS3Bucket(), bandPath)) {
         coverageCalculator.addImage(is);

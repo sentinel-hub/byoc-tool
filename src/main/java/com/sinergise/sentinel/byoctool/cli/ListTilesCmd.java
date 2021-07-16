@@ -25,7 +25,7 @@ public class ListTilesCmd implements Runnable {
     while (it.hasNext()) {
       ByocTile tile = it.next();
 
-      System.out.println(tile.idWithPath());
+      System.out.printf("%s\t%s%n", tile.getId(), tile.getPath());
     }
   }
 }

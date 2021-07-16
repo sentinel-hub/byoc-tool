@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CoverageCalculatorCollectPolygonsTest {
 
-  private GeometryFactory geometryFactory = new GeometryFactory();
+  private final GeometryFactory geometryFactory = new GeometryFactory();
 
   @Test
   void pointRemoved() {

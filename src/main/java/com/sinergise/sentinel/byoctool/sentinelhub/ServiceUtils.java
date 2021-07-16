@@ -7,8 +7,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sinergise.sentinel.byoctool.ByocTool;
 import com.sinergise.sentinel.byoctool.ingestion.IngestionException;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError.Error;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocErrorResponse;
+import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocErrorResponse.ByocError;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.glassfish.jersey.client.ClientConfig;
@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Log4j2
-class ServiceUtils {
+public class ServiceUtils {
 
   private static final String REQUEST_ID = String.format("byoc-tool-%s-%s",
       ByocTool.VERSION, UUID.randomUUID());
   private static final TracingFilter LOGGING_FILTER = new TracingFilter(REQUEST_ID);
   private static final UserAgentFilter USER_AGENT_FILTER = new UserAgentFilter();
 
-  static ObjectMapper newObjectMapper() {
+  public static ObjectMapper newObjectMapper() {
     return new ObjectMapper()
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .setSerializationInclusion(Include.NON_NULL)
@@ -67,11 +67,11 @@ class ServiceUtils {
   }
 
   private static String getErrorMessage(Response response) {
-    Error error = response.readEntity(ByocError.class).getError();
+    ByocError error = response.readEntity(ByocErrorResponse.class).getError();
     return getErrorMessage(error, response.getStatus());
   }
 
-  static String getErrorMessage(Error error, int statusCode) {
+  public static String getErrorMessage(ByocError error, int statusCode) {
     String errorMessage = String.format("%s (%d)", error.getMessage(), statusCode);
 
     if (error.getErrors() != null) {
@@ -91,7 +91,7 @@ class ServiceUtils {
       attempt += 1;
       if (attempt > 1) {
         try {
-          TimeUnit.SECONDS.sleep((attempt - 1) * 10);
+          TimeUnit.SECONDS.sleep((attempt - 1) * 10L);
         } catch (InterruptedException ignored) {
         }
 

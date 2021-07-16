@@ -49,14 +49,6 @@ public class ByocTile implements NoJsonAutoDetect {
     return other;
   }
 
-  public String idWithPath() {
-    return String.format("%s\t%s", getId(), getPath());
-  }
-
-  public String bandPath(String band) {
-    return getPath().replace(BAND_PLACEHOLDER, band);
-  }
-
   @Getter
   @Setter
   public static class AdditionalData {
