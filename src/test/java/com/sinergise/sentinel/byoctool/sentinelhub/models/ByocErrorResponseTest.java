@@ -31,7 +31,8 @@ class ByocErrorResponseTest {
   @Test
   void deserializeMapOfErrors() throws JsonProcessingException {
     ByocErrorResponse errorResponse = objectMapper
-        .readValue("{ \"error\": { \"errors\": { \"field\": \"error occurred\", \"field2\": \"another error\" }}}", ByocErrorResponse.class);
+        .readValue("{ \"error\": { \"errors\": { \"field\": \"error occurred\", \"field2\": \"another error\" }}}",
+            ByocErrorResponse.class);
 
     assertEquals("{\"field\":\"error occurred\",\"field2\":\"another error\"}",
         errorResponse.getError().getErrors().toString());
