@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Log4j2
-class ServiceUtils {
+public class ServiceUtils {
 
   private static final String REQUEST_ID = String.format("byoc-tool-%s-%s",
       ByocTool.VERSION, UUID.randomUUID());
   private static final TracingFilter LOGGING_FILTER = new TracingFilter(REQUEST_ID);
   private static final UserAgentFilter USER_AGENT_FILTER = new UserAgentFilter();
 
-  static ObjectMapper newObjectMapper() {
+  public static ObjectMapper newObjectMapper() {
     return new ObjectMapper()
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .setSerializationInclusion(Include.NON_NULL)
@@ -71,7 +71,7 @@ class ServiceUtils {
     return getErrorMessage(error, response.getStatus());
   }
 
-  static String getErrorMessage(Error error, int statusCode) {
+  public static String getErrorMessage(Error error, int statusCode) {
     String errorMessage = String.format("%s (%d)", error.getMessage(), statusCode);
 
     if (error.getErrors() != null) {

@@ -1,10 +1,9 @@
-package com.sinergise.sentinel.byoctool.sentinelhub;
+package com.sinergise.sentinel.byoctool.sentinelhub.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError;
+import com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocError.Error;
-import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
 import org.junit.jupiter.api.Test;
 
 import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.newObjectMapper;
