@@ -10,7 +10,7 @@ import static com.sinergise.sentinel.byoctool.sentinelhub.ServiceUtils.newObject
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ByocResponseTest {
+class ByocTileTest {
 
   @Test
   void deserializeUnknownAttribute() throws JsonProcessingException {
