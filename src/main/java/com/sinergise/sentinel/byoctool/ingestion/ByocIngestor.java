@@ -14,6 +14,7 @@ import org.geojson.GeoJsonObject;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -198,7 +199,7 @@ public class ByocIngestor {
   public static class Tile {
 
     String path;
-    LocalDateTime sensingTime;
+    Instant sensingTime;
     GeoJsonObject coverage;
     List<InputFile> inputFiles;
   }

@@ -6,7 +6,9 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.FileFinder.Match;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -70,7 +72,7 @@ public class TileSearch {
     return str.replaceAll("\\\\", "/");
   }
 
-  private static LocalDateTime sensingTime(Matcher m) {
+  private static Instant sensingTime(Matcher m) {
     String pattern = m.pattern().pattern();
 
     if (!pattern.contains(YEAR_CAPTURE_GROUP)) {
@@ -85,7 +87,7 @@ public class TileSearch {
     int second = captureGroupAsInt(m, pattern, SECOND_CAPTURE_GROUP).orElse(0);
     int subsecond = captureGroupAsInt(m, pattern, SUB_SECOND_CAPTURE_GROUP).orElse(0);
 
-    return LocalDateTime.of(year, month, day, hour, minute, second, subsecond);
+    return LocalDateTime.of(year, month, day, hour, minute, second, subsecond).toInstant(ZoneOffset.UTC);
   }
 
   private static Optional<Integer> captureGroupAsInt(Matcher m, String pattern, String group) {
