@@ -36,7 +36,7 @@ class ByocTileTest {
   @Test
   void parseSensingTimeAsISO() throws JsonProcessingException {
     ByocTile tile = objectMapper.readValue(
-        "{ \"sensingTime\": \"2019-10-21T14:51:46Z\"}",
+        "{ \"sensingTime\": \"2019-10-21T14:51:46Z\" }",
         ByocTile.class);
 
     assertEquals(Instant.parse("2019-10-21T14:51:46Z"), tile.getSensingTime());
@@ -45,9 +45,17 @@ class ByocTileTest {
   @Test
   void parseSensingTimeWithMillis() throws JsonProcessingException {
     ByocTile tile = objectMapper.readValue(
-        "{ \"sensingTime\": \"2019-10-21T14:51:46.123Z\"}",
+        "{ \"sensingTime\": \"2019-10-21T14:51:46.123Z\" }",
         ByocTile.class);
 
     assertEquals(Instant.parse("2019-10-21T14:51:46.123Z"), tile.getSensingTime());
+  }
+
+  @Test
+  void writeSensingTimeAsText() throws JsonProcessingException {
+    ByocTile tile = new ByocTile();
+    tile.setSensingTime(Instant.parse("2019-10-21T14:51:46.123Z"));
+
+    assertEquals("{\"sensingTime\":\"2019-10-21T14:51:46.123Z\"}", objectMapper.writeValueAsString(tile));
   }
 }
