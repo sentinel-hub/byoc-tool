@@ -38,11 +38,14 @@ public interface ByocClient {
   void updateTile(String collectionId, ByocTile tile);
 
   static ByocClient newByocClient(AuthClient authClient, ByocDeployment byocDeployment) {
-    return new ByocClientImpl(authClient::getAccessToken, byocDeployment);
+    return new ByocClientImpl(authClient::getAccessToken, byocDeployment.getServiceUrl());
   }
 
+  static ByocClient newByocClient(Supplier<String> accessTokenSupplier, String byocServiceUrl) {
+    return new ByocClientImpl(accessTokenSupplier, byocServiceUrl);
+  }
   static ByocClient newByocClient(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
-    return new ByocClientImpl(accessTokenSupplier, byocDeployment);
+    return new ByocClientImpl(accessTokenSupplier, byocDeployment.getServiceUrl());
   }
 
   class ByocClientImpl implements ByocClient {
@@ -50,14 +53,14 @@ public interface ByocClient {
     private final Client httpClient;
     private final WebTarget byocTarget;
 
-    private ByocClientImpl(Supplier<String> accessTokenSupplier, ByocDeployment byocDeployment) {
+    private ByocClientImpl(Supplier<String> accessTokenSupplier, String byocServiceUrl) {
       ClientConfig clientConfig =
           new ClientConfig()
               .register(newJsonProvider())
               .register(new AuthRequestFilter(accessTokenSupplier));
 
       this.httpClient = newHttpClient(clientConfig);
-      this.byocTarget = httpClient.target(byocDeployment.getServiceUrl());
+      this.byocTarget = httpClient.target(byocServiceUrl);
     }
 
     @Override
