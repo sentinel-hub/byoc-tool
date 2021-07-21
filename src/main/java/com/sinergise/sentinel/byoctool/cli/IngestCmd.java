@@ -5,6 +5,7 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.BandMap;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.CogFactory;
+import com.sinergise.sentinel.byoctool.ingestion.ProcessUtil;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch;
 import com.sinergise.sentinel.byoctool.ingestion.TileSearch.FileMap;
 import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
@@ -171,6 +172,9 @@ public class IngestCmd implements Runnable {
         .setExecutor(executor)
         .setCogFactory(cogFactory)
         .setTracingConfig(tracingConfig);
+
+    String gdalVersion = ProcessUtil.runCommand("gdalinfo", "--version");
+    log.info("GDAL version: {}", gdalVersion);
 
     try {
       ingestor.ingest(collectionId, tiles);
