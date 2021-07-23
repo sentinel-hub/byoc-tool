@@ -1,4 +1,4 @@
-image: sentinelhub/gdal-jdk:gdal3-jdk8
+image: ${CI_DOCKER_IMAGE}
 
 stages:
   - build
