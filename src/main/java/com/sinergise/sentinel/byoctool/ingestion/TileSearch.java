@@ -5,6 +5,7 @@ import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.InputFile;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.ingestion.FileFinder.Match;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -28,19 +29,18 @@ public class TileSearch {
   private static final String SUB_SECOND_CAPTURE_GROUP = "subsecond";
 
   public static Collection<Tile> search(
-      Path start, Pattern tilePattern, Collection<FileMap> fileMaps) throws IOException {
+      Path start, Pattern filePattern, Collection<FileMap> fileMaps, String cogStorageFolder) throws IOException {
 
     Map<String, Tile> tiles = new HashMap<>();
 
-    for (Match m : FileFinder.find(start, tilePattern)) {
+    for (Match m : FileFinder.find(start, filePattern)) {
       Path file = m.file();
-      String tileGroup = m.matcher().group("tile");
-      String tilePath = toForwardSlashes(tileGroup);
+      cogStorageFolder = replaceRegexGroups(cogStorageFolder, m.matcher());
 
-      Tile tile = tiles.getOrDefault(tilePath, null);
+      Tile tile = tiles.getOrDefault(cogStorageFolder, null);
       if (tile == null) {
-        tile = new Tile(tilePath, sensingTime(m.matcher()), null, new LinkedList<>());
-        tiles.put(tilePath, tile);
+        tile = new Tile(cogStorageFolder, getSensingTime(m.matcher()), null, new LinkedList<>());
+        tiles.put(cogStorageFolder, tile);
       }
 
       for (FileMap fm : fileMaps) {
@@ -63,6 +63,36 @@ public class TileSearch {
     return tiles.values();
   }
 
+  static String replaceRegexGroups(String cogStorageFolder, Matcher matcher) {
+    String folder = cogStorageFolder;
+    Set<String> namedGroups;
+    try {
+      namedGroups = getNamedGroups(matcher.pattern());
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get named groups out of pattern");
+    }
+
+    for (String group : namedGroups) {
+      folder = folder.replace(String.format("<%s>", group), matcher.group(group));
+    }
+
+    return toForwardSlashes(folder);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Set<String> getNamedGroups(Pattern regex) throws Exception {
+    Method namedGroupsMethod = Pattern.class.getDeclaredMethod("namedGroups");
+    namedGroupsMethod.setAccessible(true);
+
+    Map<String, Integer> namedGroups = (Map<String, Integer>) namedGroupsMethod.invoke(regex);
+
+    if (namedGroups == null) {
+      throw new RuntimeException("No named groups");
+    }
+
+    return namedGroups.keySet();
+  }
+
   private static String fileNameWithoutExtension(Path file) {
     String fileName = file.getFileName().toString();
     return fileName.substring(0, fileName.lastIndexOf("."));
@@ -72,7 +102,7 @@ public class TileSearch {
     return str.replaceAll("\\\\", "/");
   }
 
-  private static Instant sensingTime(Matcher m) {
+  static Instant getSensingTime(Matcher m) {
     String pattern = m.pattern().pattern();
 
     if (!pattern.contains(YEAR_CAPTURE_GROUP)) {
@@ -91,7 +121,7 @@ public class TileSearch {
   }
 
   private static Optional<Integer> captureGroupAsInt(Matcher m, String pattern, String group) {
-    return pattern.contains(group)
+    return pattern.contains(String.format("<%s>", group))
         ? Optional.of(Integer.parseInt(m.group(group)))
         : Optional.empty();
   }
@@ -100,7 +130,7 @@ public class TileSearch {
   @Accessors(fluent = true)
   public static class FileMap {
 
-    private final Pattern filePattern;
-    private final List<BandMap> bands;
+    Pattern filePattern;
+    List<BandMap> bands;
   }
 }

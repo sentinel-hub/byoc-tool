@@ -1,9 +1,12 @@
 package com.sinergise.sentinel.byoctool.ingestion;
 
+import lombok.extern.log4j.Log4j2;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
+@Log4j2
 public class ProcessUtil {
 
   public static String runCommand(String... args) {
@@ -15,11 +18,12 @@ public class ProcessUtil {
 
   public static String runCommand(ProcessBuilder pb) {
     try {
+      log.trace("Running command: {}", String.join(" ", pb.command()));
+
       Process process = pb.start();
 
       final String stdOut;
-      try (BufferedReader rdr =
-          new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+      try (BufferedReader rdr = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
         stdOut = rdr.lines().collect(Collectors.joining(System.lineSeparator()));
       }
 

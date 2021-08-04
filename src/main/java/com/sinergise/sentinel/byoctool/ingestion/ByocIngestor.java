@@ -13,9 +13,9 @@ import lombok.extern.log4j.Log4j2;
 import org.geojson.GeoJsonObject;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -44,6 +44,9 @@ public class ByocIngestor {
   private CoverageTracingConfig tracingConfig;
 
   @Setter
+  private boolean deleteGeneratedCogs;
+
+  @Setter
   private Consumer<Tile> onTileIngestionStarted;
 
   @Setter
@@ -61,19 +64,16 @@ public class ByocIngestor {
 
     List<Future<?>> futures = new LinkedList<>();
     for (Tile tile : tiles) {
-      if (doesTileExist(collection, tile)) {
-        System.out.printf("Skipping tile \"%s\" because it exists%n", tile.path());
-      } else {
-        futures.add(completionService.submit(() -> ingestTile(collection, tile)));
-      }
+      futures.add(completionService.submit(() ->
+          new IngestTask(collection, tile).ingest()));
     }
 
-    List<String> createdTiles = new LinkedList<>();
+    List<String> tileIds = new LinkedList<>();
 
     for (int i = 0; i < futures.size(); i++) {
       try {
         completionService.take().get()
-            .ifPresent(createdTiles::add);
+            .ifPresent(tileIds::add);
       } catch (ExecutionException e) {
         if (e.getCause() instanceof IngestionException) {
           log.error(e.getMessage());
@@ -85,27 +85,21 @@ public class ByocIngestor {
       }
     }
 
-    return createdTiles;
-  }
-
-  private boolean doesTileExist(ByocCollection collection, Tile tile) {
-    String finalPath = tile.path().contains(BAND_PLACEHOLDER) ? tile.path()
-        : String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER);
-
-    return byocClient.searchTile(collection.getId(), finalPath).isPresent();
-  }
-
-  private Optional<String> ingestTile(ByocCollection collection, Tile tile) throws IOException {
-    return new IngestTile(collection, tile).ingest();
+    return tileIds;
   }
 
   @RequiredArgsConstructor
-  class IngestTile {
+  class IngestTask {
 
     private final ByocCollection collection;
     private final Tile tile;
 
     private Optional<String> ingest() throws IOException {
+      if (doesTileExist()) {
+        log.info("Skipping tile {} because it exists", tile.path());
+        return Optional.empty();
+      }
+
       if (onTileIngestionStarted != null) {
         onTileIngestionStarted.accept(tile);
       }
@@ -127,6 +121,13 @@ public class ByocIngestor {
           onTileIngestionEnded.accept(tile);
         }
       }
+    }
+
+    private boolean doesTileExist() {
+      String finalPath = tile.path().contains(BAND_PLACEHOLDER) ? tile.path()
+          : String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER);
+
+      return byocClient.searchTile(collection.getId(), finalPath).isPresent();
     }
 
     private GeoJsonObject processFiles() throws IOException {
@@ -166,6 +167,10 @@ public class ByocIngestor {
         log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
 
         objectStorageClient.store(collection.getS3Bucket(), s3Key, cogPath);
+        
+        if (deleteGeneratedCogs) {
+          Files.delete(cogPath);
+        }
       }
 
       if (coverageCalculator != null) {

@@ -34,8 +34,10 @@ import java.util.regex.Pattern;
 @Log4j2
 public class IngestCmd implements Runnable {
 
-  static final String DEFAULT_FILE_PATTERN =
+  public static final String DEFAULT_FILE_PATTERN =
       "(.*[\\/|\\\\])*(?<tile>.*)[\\/|\\\\].*\\.(?i)(tif|tiff|jp2)";
+
+  public static final String DEFAULT_COG_STORAGE_FOLDER = "<tile>";
 
   @Parameters(index = "0", description = "Collection id")
   private String collectionId;
@@ -46,9 +48,16 @@ public class IngestCmd implements Runnable {
   @Option(
       names = {"-f", "--file-pattern"},
       description =
-          "Regular expression to select files. Include the obligatory capture group <tile> to specify the common path of files that belong to the same tile. This also sets the tile name to the value of this capture group. The default is \"${DEFAULT-VALUE})\", which treats all tiff/jp2 files in a folder as a tile, with the folder name as the tile name. For sensing time, capture groups <year>, <month>, <day>, <hour>, <minute>, <second> and <subsecond> can be used. If not specified, no sensing time will be set. If specified, <year> is obligatory and any missing group will set that value to zero. e.g. If given only <year>, the sensing time is set to 00:00:00.0000000 UTC, January 1, <year>. Example pattern: \"(?<tile>.*)\\/.*(?<year>[0-9]{4})(?<month>[0-9]{2})(?<day>[0-9]{2})T(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{02}).*.tif\".",
+          "This is a regular expression which will be used to collect and group files for processing into COGs. Can be used in one of two ways. You need to either define `<tile>` or custom named capture groups. If the capture group `<tile>` is specified it will represent the common path of files which belong to the same tile. This common path will also be the folder in the cloud where the generated COGs will be uploaded to. Alternatively, if `<tile>` is not specified, you need to set the --cog-stage-folder parameter and define custom named capture groups here. This allows for more flexibility than `<tile>` and is useful for constructing the common path(s) using your defined capture groups; useful if your files are in different folders, for example. For sensing time, capture groups <year>, <month>, <day>, <hour>, <minute>, <second> and <subsecond> can be used. If not specified, no sensing time will be set. If specified, <year> is obligatory and any missing group will set that value to zero. e.g. If given only <year>, the sensing time is set to 00:00:00.0000000 UTC, January 1, <year>. Example pattern: \"(?<tile>.*)\\/.*(?<year>[0-9]{4})(?<month>[0-9]{2})(?<day>[0-9]{2})T(?<hour>[0-9]{2})(?<minute>[0-9]{2})(?<second>[0-9]{02}).*.tif\".",
       defaultValue = DEFAULT_FILE_PATTERN)
   private String filePattern;
+
+  @Option(
+      names = {"--cog-storage-folder"},
+      description =
+          "Defines the folder in your cloud storage where the generated COGs will be uploaded to. Use this in combination with --file-pattern if you need more flexibility in grouping files than is provided with `<tile>`. Any named capture group defined in --file-pattern can be used here. To use a named capture group, specify it as `<myGroupName>` and the captured value will be used instead. Files with equal storage folder will be interpreted as files from the same tile. Here's an example with multiple capture groups. Let's say you have tiles that have files in different folders, for example a tile with date 2020-06-01 has files in data/SR/2020-06-01.tif and data/QA/2020-06-01.tif. You cannot define a single capture group to capture both `data` and `2020-06-01`. Thus, you need to use multiple regex groups. You could select files as --file-pattern=\".*(?<firstPart>data/)(SR|QA)/(?<secondPart>.*(?<year>[0-9]{4})-(?<month>[0-9]{2})-(?<day>[0-9]{2}))\\.tif\" and then define cloud storage folder as --cog-storage-folder=\"<firstPart><secondPart>\", which would upload the tile 2020-06-01 in cloud to folder `data/2020-06-01`.",
+      defaultValue = DEFAULT_COG_STORAGE_FOLDER)
+  private String cogStorageFolder;
 
   @Option(
       names = {"-fm", "--file-map"},
@@ -108,6 +117,11 @@ public class IngestCmd implements Runnable {
       description = "Skips the ingestion and just prints found tiles.")
   private boolean dryRun;
 
+  @Option(
+      names = {"--delete-generated-cogs"},
+      description = "Deletes generated COGs after they are processed and uploaded. Will leave them on disk if not set.")
+  private boolean deleteGeneratedCogs;
+
   @ParentCommand private ByocTool parent;
 
   public void run() {
@@ -124,7 +138,7 @@ public class IngestCmd implements Runnable {
 
     Collection<Tile> tiles;
     try {
-      tiles = TileSearch.search(folder, Pattern.compile(filePattern), fileMaps);
+      tiles = TileSearch.search(folder, Pattern.compile(filePattern), fileMaps, cogStorageFolder);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -141,13 +155,12 @@ public class IngestCmd implements Runnable {
 
     if (processingFolder != null) {
       if (!Files.exists(processingFolder)) {
-        System.err.println(String.format("Processing folder %s does not exist!", processingFolder));
+        System.err.printf("Processing folder %s does not exist!%n", processingFolder);
         return;
       }
 
       if (!Files.isDirectory(processingFolder)) {
-        System.err.println(
-            String.format("Processing folder %s is not a folder!", processingFolder));
+        System.err.printf("Processing folder %s is not a folder!%n", processingFolder);
         return;
       }
     }
@@ -171,7 +184,8 @@ public class IngestCmd implements Runnable {
     ByocIngestor ingestor = new ByocIngestor(byocClient, objectStorageClient)
         .setExecutor(executor)
         .setCogFactory(cogFactory)
-        .setTracingConfig(tracingConfig);
+        .setTracingConfig(tracingConfig)
+        .setDeleteGeneratedCogs(deleteGeneratedCogs);
 
     String gdalVersion = ProcessUtil.runCommand("gdalinfo", "--version");
     log.info("GDAL version: {}", gdalVersion);

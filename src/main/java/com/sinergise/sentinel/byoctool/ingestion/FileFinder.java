@@ -45,7 +45,7 @@ public class FileFinder extends SimpleFileVisitor<Path> {
   @Accessors(fluent = true)
   static class Match {
 
-    private final Path file;
-    private final Matcher matcher;
+    Path file;
+    Matcher matcher;
   }
 }
