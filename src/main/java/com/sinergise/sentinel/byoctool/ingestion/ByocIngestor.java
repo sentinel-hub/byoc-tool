@@ -2,6 +2,8 @@ package com.sinergise.sentinel.byoctool.ingestion;
 
 import com.sinergise.sentinel.byoctool.cli.CoverageTracingConfig;
 import com.sinergise.sentinel.byoctool.coverage.CoverageCalculator;
+import com.sinergise.sentinel.byoctool.ingestion.IngestionException.CollectionNotFound;
+import com.sinergise.sentinel.byoctool.ingestion.IngestionException.TileInvalid;
 import com.sinergise.sentinel.byoctool.ingestion.storage.ObjectStorageClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.ByocClient;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
@@ -57,7 +59,7 @@ public class ByocIngestor {
 
   public Collection<String> ingest(String collectionId, Collection<Tile> tiles) {
     ByocCollection collection = byocClient.getCollection(collectionId)
-        .orElseThrow(() -> new RuntimeException("Collection not found."));
+        .orElseThrow(() -> new CollectionNotFound(collectionId));
 
     CompletionService<Optional<String>> completionService =
         new ExecutorCompletionService<>(executor);
@@ -193,7 +195,7 @@ public class ByocIngestor {
       Collection<String> errors = TileValidation.validate(cogPaths);
 
       if (!errors.isEmpty()) {
-        throw new IngestionException(tile, errors);
+        throw new TileInvalid(tile, errors);
       }
     }
   }
