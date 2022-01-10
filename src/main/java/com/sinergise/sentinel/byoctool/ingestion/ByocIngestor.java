@@ -57,49 +57,67 @@ public class ByocIngestor {
   @Setter
   private Consumer<Tile> onTileIngested;
 
-  public Collection<String> ingest(String collectionId, Collection<Tile> tiles) {
+  public List<IngestionResult> ingest(String collectionId, Collection<Tile> tiles) {
     ByocCollection collection = byocClient.getCollection(collectionId)
         .orElseThrow(() -> new CollectionNotFound(collectionId));
 
-    CompletionService<Optional<String>> completionService =
+    CompletionService<IngestionResult> completionService =
         new ExecutorCompletionService<>(executor);
 
     List<Future<?>> futures = new LinkedList<>();
     for (Tile tile : tiles) {
-      futures.add(completionService.submit(() ->
-          new IngestTask(collection, tile).ingest()));
+      futures.add(completionService.submit(() -> {
+        IngestionResult result;
+        try {
+          result = new IngestTileTask(collection, tile).ingest();
+        } catch (Exception e) {
+          String errors;
+          if (e instanceof IngestionException) {
+            log.error(e.getMessage());
+            errors = e.getMessage();
+          } else {
+            log.error("Unexpected error occurred.", e);
+            errors = "Unexpected error occurred.";
+          }
+
+          result = IngestionResult.builder()
+              .tile(tile)
+              .errors(errors)
+              .build();
+        }
+        return result;
+      }));
     }
 
-    List<String> tileIds = new LinkedList<>();
+    List<IngestionResult> results = new LinkedList<>();
 
     for (int i = 0; i < futures.size(); i++) {
       try {
-        completionService.take().get()
-            .ifPresent(tileIds::add);
-      } catch (ExecutionException e) {
-        if (e.getCause() instanceof IngestionException) {
-          log.error(e.getMessage());
-        } else {
-          log.error("Unexpected error occurred", e);
-        }
-      } catch (InterruptedException e) {
+        results.add(completionService.take().get());
+      } catch (ExecutionException | InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
 
-    return tileIds;
+    return results;
   }
 
   @RequiredArgsConstructor
-  class IngestTask {
+  class IngestTileTask {
 
     private final ByocCollection collection;
     private final Tile tile;
 
-    private Optional<String> ingest() throws IOException {
-      if (doesTileExist()) {
-        log.info("Skipping tile {} because it exists", tile.path());
-        return Optional.empty();
+    private IngestionResult ingest() throws IOException {
+      Optional<ByocTile> existingTile = lookForTile();
+      if (existingTile.isPresent()) {
+        log.info("Skipping tile with path {} because it exists", tile.path());
+
+        return IngestionResult.builder()
+            .tile(tile)
+            .tileId(existingTile.get().getId())
+            .warnings(String.format("Tile with path %s already exists.", tile.path()))
+            .build();
       }
 
       if (onTileIngestionStarted != null) {
@@ -117,7 +135,11 @@ public class ByocIngestor {
           onTileIngested.accept(tile);
         }
 
-        return Optional.of(tileId);
+        return IngestionResult.builder()
+            .tile(tile)
+            .tileId(tileId)
+            .tileCreated(true)
+            .build();
       } finally {
         if (onTileIngestionEnded != null) {
           onTileIngestionEnded.accept(tile);
@@ -125,11 +147,11 @@ public class ByocIngestor {
       }
     }
 
-    private boolean doesTileExist() {
+    private Optional<ByocTile> lookForTile() {
       String finalPath = tile.path().contains(BAND_PLACEHOLDER) ? tile.path()
           : String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER);
 
-      return byocClient.searchTile(collection.getId(), finalPath).isPresent();
+      return byocClient.searchTile(collection.getId(), finalPath);
     }
 
     private GeoJsonObject processFiles() throws IOException {
@@ -169,7 +191,7 @@ public class ByocIngestor {
         log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
 
         objectStorageClient.store(collection.getS3Bucket(), s3Key, cogPath);
-        
+
         if (deleteGeneratedCogs) {
           Files.delete(cogPath);
         }
@@ -254,5 +276,15 @@ public class ByocIngestor {
     Path inputPath;
     BandMap bandMap;
     Path cogPath;
+  }
+
+  @Builder
+  @Getter
+  public static class IngestionResult {
+    Tile tile;
+    String tileId;
+    boolean tileCreated;
+    String errors;
+    String warnings;
   }
 }

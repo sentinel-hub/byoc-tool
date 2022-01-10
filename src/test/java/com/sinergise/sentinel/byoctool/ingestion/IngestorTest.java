@@ -1,5 +1,6 @@
 package com.sinergise.sentinel.byoctool.ingestion;
 
+import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.IngestionResult;
 import com.sinergise.sentinel.byoctool.ingestion.ByocIngestor.Tile;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocCollection;
 import com.sinergise.sentinel.byoctool.sentinelhub.models.ByocTile;
@@ -8,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class IngestorTest {
 
@@ -56,12 +57,17 @@ class IngestorTest {
   @Test
   void onIngestionException() {
     Tile goodTile = Tile.builder()
-        .path("goodPath")
+        .path("path1")
+        .inputFiles(Collections.emptyList())
+        .build();
+
+    Tile presentTile = Tile.builder()
+        .path("path2")
         .inputFiles(Collections.emptyList())
         .build();
 
     Tile badTile = Tile.builder()
-        .path("badPath")
+        .path("path3")
         .inputFiles(Collections.emptyList())
         .build();
 
@@ -70,12 +76,16 @@ class IngestorTest {
       @Override
       public ByocTile createTile(String collectionId, ByocTile tile) {
         if (tile.getPath().equals(badTile.path())) {
-          throw new IngestionException("something happened");
+          throw new IngestionException("some error");
         }
 
         return super.createTile(collectionId, tile);
       }
     };
+
+    ByocTile presentByocTile = new ByocTile();
+    presentByocTile.setPath("path2/(BAND).tiff");
+    byocClient.addTile(presentByocTile);
 
     ByocCollection collection = new ByocCollection();
     collection.setId("collectionId");
@@ -86,10 +96,34 @@ class IngestorTest {
     ByocIngestor ingestor = new ByocIngestor(byocClient, new TestStorageClient());
     ingestor.setOnTileIngested(ingestedTiles::add);
 
-    Collection<String> tileIds = ingestor.ingest(collection.getId(), Arrays.asList(badTile, goodTile));
+    List<IngestionResult> results = ingestor.ingest(collection.getId(),
+        Arrays.asList(badTile, goodTile, presentTile));
 
-    assertEquals(1, new LinkedList<>(tileIds).size());
     assertEquals(1, ingestedTiles.size());
     assertEquals(goodTile, ingestedTiles.get(0));
+    assertEquals(3, results.size());
+
+    IngestionResult result = findTileWithPath(results, goodTile).get();
+    assertTrue(result.isTileCreated());
+    assertNotNull(result.getTileId());
+    assertNull(result.getErrors());
+    assertNull(result.getWarnings());
+
+    result = findTileWithPath(results, badTile).get();
+    assertNull(result.getTileId());
+    assertEquals("some error", result.getErrors());
+    assertNull(result.getWarnings());
+
+    result = findTileWithPath(results, presentTile).get();
+    assertFalse(result.isTileCreated());
+    assertNull(result.getTileId());
+    assertNull(result.getErrors());
+    assertTrue(result.getWarnings().contains("already exist"));
+  }
+
+  private Optional<IngestionResult> findTileWithPath(List<IngestionResult> results, Tile tile) {
+    return results.stream()
+        .filter(result -> result.getTile().equals(tile))
+        .findFirst();
   }
 }
