@@ -74,12 +74,12 @@ class IngestorTest {
     ByocClientStub byocClient = new ByocClientStub() {
 
       @Override
-      public ByocTile createTile(String collectionId, ByocTile tile) {
-        if (tile.getPath().equals(badTile.path())) {
+      public ByocTile createTile(String collectionId, ByocTile newByocTile) {
+        if (newByocTile.getPath().equals(badTile.path() + "/(BAND).tiff")) {
           throw new IngestionException("some error");
         }
 
-        return super.createTile(collectionId, tile);
+        return super.createTile(collectionId, newByocTile);
       }
     };
 
@@ -125,5 +125,19 @@ class IngestorTest {
     return results.stream()
         .filter(result -> result.getTile().equals(tile))
         .findFirst();
+  }
+
+  @Test
+  void tilePathWithBandPlaceholder() {
+    Tile tile = Tile.builder()
+        .path("path/(BAND).tiff")
+        .build();
+
+    ByocIngestor ingestor = new ByocIngestor(null, null);
+    Collection<Tile> tiles = Collections.singletonList(tile);
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        () -> ingestor.ingest(null, tiles));
+
+    assertTrue(exception.getMessage().contains("must not contain (BAND)!"));
   }
 }

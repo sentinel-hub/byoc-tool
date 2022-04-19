@@ -58,35 +58,18 @@ public class ByocIngestor {
   private Consumer<Tile> onTileIngested;
 
   public List<IngestionResult> ingest(String collectionId, Collection<Tile> tiles) {
+    validateTiles(tiles);
+
     ByocCollection collection = byocClient.getCollection(collectionId)
         .orElseThrow(() -> new CollectionNotFound(collectionId));
 
-    CompletionService<IngestionResult> completionService =
-        new ExecutorCompletionService<>(executor);
+    CompletionService<IngestionResult> completionService = new ExecutorCompletionService<>(executor);
 
     List<Future<?>> futures = new LinkedList<>();
     for (Tile tile : tiles) {
-      futures.add(completionService.submit(() -> {
-        IngestionResult result;
-        try {
-          result = new IngestTileTask(collection, tile).ingest();
-        } catch (Exception e) {
-          String errors;
-          if (e instanceof IngestionException) {
-            log.error(e.getMessage());
-            errors = e.getMessage();
-          } else {
-            log.error("Unexpected error occurred.", e);
-            errors = "Unexpected error occurred.";
-          }
-
-          result = IngestionResult.builder()
-              .tile(tile)
-              .errors(errors)
-              .build();
-        }
-        return result;
-      }));
+      futures.add(completionService.submit(() ->
+          new IngestTileTask(collection, tile).ingest()
+      ));
     }
 
     List<IngestionResult> results = new LinkedList<>();
@@ -102,44 +85,50 @@ public class ByocIngestor {
     return results;
   }
 
+  private void validateTiles(Collection<Tile> tiles) {
+    for (Tile tile : tiles) {
+      if (tile.path().contains(BAND_PLACEHOLDER)) {
+        throw new IllegalArgumentException(String.format(
+            "Tile path %s must not contain %s!",
+            tile.path(), BAND_PLACEHOLDER));
+      }
+    }
+  }
+
   @RequiredArgsConstructor
   class IngestTileTask {
 
     private final ByocCollection collection;
     private final Tile tile;
 
-    private IngestionResult ingest() throws IOException {
-      Optional<ByocTile> existingTile = lookForTile();
-      if (existingTile.isPresent()) {
-        log.info("Skipping tile with path {} because it exists", tile.path());
-
-        return IngestionResult.builder()
-            .tile(tile)
-            .tileId(existingTile.get().getId())
-            .warnings(String.format("Tile with path %s already exists.", tile.path()))
-            .build();
-      }
-
-      if (onTileIngestionStarted != null) {
-        onTileIngestionStarted.accept(tile);
-      }
-
+    private IngestionResult ingest() {
       try {
+        String fullTilePath = String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER);
+
+        Optional<ByocTile> existingTile = byocClient.searchTile(collection.getId(), fullTilePath);
+        if (existingTile.isPresent()) {
+          log.info("Skipping tile {} because it exists", fullTilePath);
+          return createTileExistsResult(existingTile.get());
+        }
+
+        if (onTileIngestionStarted != null) {
+          onTileIngestionStarted.accept(tile);
+        }
+
         ByocTile byocTile = new ByocTile();
-        byocTile.setPath(tile.path());
+        byocTile.setPath(fullTilePath);
         byocTile.setSensingTime(tile.sensingTime());
-        byocTile.setCoverGeometry(processFiles());
+        byocTile.setCoverGeometry(processFiles(fullTilePath));
         String tileId = byocClient.createTile(collection.getId(), byocTile).getId();
 
         if (onTileIngested != null) {
           onTileIngested.accept(tile);
         }
 
-        return IngestionResult.builder()
-            .tile(tile)
-            .tileId(tileId)
-            .tileCreated(true)
-            .build();
+        return createTileCreatedResult(tileId);
+
+      } catch (Exception e) {
+        return handleFailedIngestion(e);
       } finally {
         if (onTileIngestionEnded != null) {
           onTileIngestionEnded.accept(tile);
@@ -147,15 +136,40 @@ public class ByocIngestor {
       }
     }
 
-    private Optional<ByocTile> lookForTile() {
-      String finalPath = tile.path().contains(BAND_PLACEHOLDER) ? tile.path()
-          : String.format("%s/%s.tiff", tile.path(), BAND_PLACEHOLDER);
-
-      return byocClient.searchTile(collection.getId(), finalPath);
+    private IngestionResult createTileExistsResult(ByocTile existingByocTile) {
+      return IngestionResult.builder()
+          .tile(tile)
+          .tileId(existingByocTile.getId())
+          .warnings(String.format("Tile with path %s already exists.", tile.path()))
+          .build();
     }
 
-    private GeoJsonObject processFiles() throws IOException {
-      validateFiles(findTiffFiles(tile));
+    private IngestionResult createTileCreatedResult(String tileId) {
+      return IngestionResult.builder()
+          .tile(tile)
+          .tileId(tileId)
+          .tileCreated(true)
+          .build();
+    }
+
+    private IngestionResult handleFailedIngestion(Exception e) {
+      String errors;
+      if (e instanceof IngestionException) {
+        log.error(e.getMessage());
+        errors = e.getMessage();
+      } else {
+        log.error("Unexpected error occurred.", e);
+        errors = "Unexpected error occurred.";
+      }
+
+      return IngestionResult.builder()
+          .tile(tile)
+          .errors(errors)
+          .build();
+    }
+
+    private GeoJsonObject processFiles(String fullTilePath) throws IOException {
+      validateTiffs(getTiffs(tile));
 
       Collection<CogSource> cogSources = new LinkedList<>();
 
@@ -169,8 +183,11 @@ public class ByocIngestor {
         }
       }
 
-      List<Path> cogPaths = cogSources.stream().map(CogSource::cogPath).collect(Collectors.toList());
-      validateFiles(cogPaths);
+      List<Path> cogPaths = cogSources.stream()
+          .map(CogSource::cogPath)
+          .collect(Collectors.toList());
+
+      validateTiffs(cogPaths);
 
       CoverageCalculator coverageCalculator = null;
       if (tracingConfig != null && tile.coverage() == null) {
@@ -187,7 +204,7 @@ public class ByocIngestor {
           coverageCalculator.addImage(cogPath);
         }
 
-        String s3Key = String.format("%s/%s.tiff", tile.path(), bandMap.name());
+        String s3Key = fullTilePath.replace(BAND_PLACEHOLDER, bandMap.name());
         log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
 
         objectStorageClient.store(collection.getS3Bucket(), s3Key, cogPath);
@@ -206,15 +223,15 @@ public class ByocIngestor {
       return null;
     }
 
-    private List<Path> findTiffFiles(Tile tile) {
+    private List<Path> getTiffs(Tile tile) {
       return tile.inputFiles().stream()
           .map(InputFile::path)
           .filter(path -> TIFF_FILE_PATTERN.matcher(path.toString()).find())
           .collect(Collectors.toList());
     }
 
-    private void validateFiles(List<Path> cogPaths) throws IOException {
-      Collection<String> errors = TileValidation.validate(cogPaths);
+    private void validateTiffs(List<Path> paths) throws IOException {
+      Collection<String> errors = TileValidation.validate(paths);
 
       if (!errors.isEmpty()) {
         throw new TileInvalid(tile, errors);
