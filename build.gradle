@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.sinergise.sentinel'
-version = '0.8.5'
+version = '0.8.6'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -45,8 +45,8 @@ ext {
 
 dependencies {
 
-    implementation platform('com.google.cloud:libraries-bom:20.4.0')
-    implementation platform('io.grpc:grpc-bom:1.37.1')
+    implementation platform('com.google.cloud:libraries-bom:25.4.0')
+    implementation platform('io.grpc:grpc-bom:1.47.0')
     compile 'com.google.cloud:google-cloud-storage'
 
     implementation "info.picocli:picocli:4.0.4"
