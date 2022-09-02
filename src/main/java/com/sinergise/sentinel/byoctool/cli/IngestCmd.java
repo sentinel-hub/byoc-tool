@@ -188,7 +188,7 @@ public class IngestCmd implements Runnable {
         .setDeleteGeneratedCogs(deleteGeneratedCogs);
 
     String gdalVersion = ProcessUtil.runCommand("gdalinfo", "--version");
-    log.info("GDAL version: {}", gdalVersion);
+    log.debug("GDAL version: {}", gdalVersion);
 
     try {
       ingestor.ingest(collectionId, tiles);
