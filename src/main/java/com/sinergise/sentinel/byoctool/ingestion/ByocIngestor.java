@@ -107,7 +107,7 @@ public class ByocIngestor {
 
         Optional<ByocTile> existingTile = byocClient.searchTile(collection.getId(), fullTilePath);
         if (existingTile.isPresent()) {
-          log.debug("Skipping tile {} because it exists", fullTilePath);
+          log.info("Skipping tile {} because it exists.", fullTilePath);
           return createTileExistsResult(existingTile.get());
         }
 
@@ -124,6 +124,8 @@ public class ByocIngestor {
         if (onTileIngested != null) {
           onTileIngested.accept(tile);
         }
+
+        log.info("Ingested tile {}.", fullTilePath);
 
         return createTileCreatedResult(tileId);
 
