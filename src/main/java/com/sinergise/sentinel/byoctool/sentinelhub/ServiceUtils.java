@@ -100,7 +100,7 @@ public class ServiceUtils {
         logMessage = logMessageBase + String.format(" (attempt %d)", attempt);
       }
 
-      log.info(logMessage);
+      log.debug(logMessage);
 
       try {
         response = request.get();
@@ -138,7 +138,7 @@ public class ServiceUtils {
 
     TracingFilter(String requestId) {
       this.requestId = requestId;
-      log.info("Request id is {}", requestId);
+      log.trace("Request id is {}", requestId);
     }
 
     @Override

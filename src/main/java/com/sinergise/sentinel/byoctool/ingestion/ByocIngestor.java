@@ -107,7 +107,7 @@ public class ByocIngestor {
 
         Optional<ByocTile> existingTile = byocClient.searchTile(collection.getId(), fullTilePath);
         if (existingTile.isPresent()) {
-          log.info("Skipping tile {} because it exists", fullTilePath);
+          log.info("Skipping tile {} because it exists.", fullTilePath);
           return createTileExistsResult(existingTile.get());
         }
 
@@ -124,6 +124,8 @@ public class ByocIngestor {
         if (onTileIngested != null) {
           onTileIngested.accept(tile);
         }
+
+        log.info("Ingested tile {}.", fullTilePath);
 
         return createTileCreatedResult(tileId);
 
@@ -176,7 +178,7 @@ public class ByocIngestor {
       for (InputFile inputFile : tile.inputFiles()) {
         for (BandMap bandMap : inputFile.bandMaps()) {
 
-          log.info("Creating COG out of image {} at index {}", inputFile.path(), bandMap.index());
+          log.trace("Creating COG out of image {} at index {}", inputFile.path(), bandMap.index());
           Path cogFile = cogFactory.createCog(tile, inputFile.path(), bandMap);
 
           cogSources.add(new CogSource(inputFile.path(), bandMap, cogFile));
@@ -200,12 +202,12 @@ public class ByocIngestor {
         Path cogPath = cogSource.cogPath();
 
         if (coverageCalculator != null) {
-          log.info("Tracing coverage in image {} at index {}", inputFile, bandMap.index());
+          log.trace("Tracing coverage in image {} at index {}", inputFile, bandMap.index());
           coverageCalculator.addImage(cogPath);
         }
 
         String s3Key = fullTilePath.replace(BAND_PLACEHOLDER, bandMap.name());
-        log.info("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
+        log.trace("Uploading image {} at index {} to s3 {}", inputFile, bandMap.index(), s3Key);
 
         objectStorageClient.store(collection.getS3Bucket(), s3Key, cogPath);
 
