@@ -54,7 +54,6 @@ public class SetCoverageCmd implements Runnable {
 
     CoverageCalculator coverageCalculator = new CoverageCalculator(coverageTracingConfig);
     ObjectStorageClient objectStorageClient = parent.newObjectStorageClient(collectionInfo);
-    log.debug("Processing tile {} (id = {})", tile.getPath(), tile.getId());
 
     try {
       if (file != null) {
