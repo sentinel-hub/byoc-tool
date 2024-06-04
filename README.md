@@ -26,7 +26,7 @@ Depending on the installation type, the following are also required:
 
 Java install:
 
-- Java 8 or newer installed on your computer
+- Java 8 to 11 have been tested and are supported. Newer versions may not work due to gradle (in)compatibility.
 - GDAL (https://gdal.org/) installed, at least v2.3.0, but it is highly recommend that you install a newer version of GDAL (v3.1 or newer), as these versions contain important fixes. Additionally, the `GDAL` and `GDAL_DATA` system environment variables must be set. 
 
 Docker install:
