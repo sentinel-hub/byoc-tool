@@ -5,6 +5,14 @@ stages:
   - test
   - publish
 
+include:
+  - project: "swsec/ci-config"
+    ref: no-submodule
+    file:
+      - "/templates/.sast.yaml"
+      - "/templates/.sd.yaml"
+      - "/templates/.ds.yaml"
+
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
@@ -32,3 +40,4 @@ publish:
   when: manual
   script:
     - ./gradlew publish
+
