@@ -4,7 +4,7 @@ The Sentinel Hub BYOC Tool is software which can be used to prepare your data fo
 
 The tool converts your TIFF and JP2 files to supported Cloud Optimized GeoTIFFs, uploads them to you AWS S3 bucket and registers them in the Sentinel Hub BYOC service. When complete, your data becomes visible in Sentinel Hub. The same steps can be done manually and are detailed in our [documentation](https://docs.sentinel-hub.com/api/latest/#/API/byoc).
 
-The tool can be run either in Docker or as Java JAR. Instructions on how to install the tool are [here](#installation-instructions).
+The tool can be run as Java JAR. Instructions on how to install the tool are [here](#installation-instructions).
 
 The tool works only with AWS S3 buckets in EU-Central-1 and US-West-2 region.
 
@@ -26,20 +26,12 @@ Depending on the installation type, the following are also required:
 
 Java install:
 
-- Java 8 to 11 have been tested and are supported. Newer versions may not work due to gradle (in)compatibility.
+- Java 21 have been tested and are supported. Newer versions may not work due to gradle (in)compatibility.
 - GDAL (https://gdal.org/) installed, at least v2.3.0, but it is highly recommend that you install a newer version of GDAL (v3.1 or newer), as these versions contain important fixes. Additionally, the `GDAL` and `GDAL_DATA` system environment variables must be set. 
-
-Docker install:
-
-- Docker installed on your computer
 
 ## Installation instructions
 
 Clone/download the contents of this repository. Open a command prompt and navigate to the byoc-tool folder which contains the downloaded repository. Depending on your chosen installation type, run one of the following:
-
-### Building a Docker image
-
-Run `docker build --tag byoctool .`
 
 ### Building a Java JAR
 
