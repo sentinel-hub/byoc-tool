@@ -31,9 +31,7 @@ Java install:
 
 ## Installation instructions
 
-Clone/download the contents of this repository. Open a command prompt and navigate to the byoc-tool folder which contains the downloaded repository. Depending on your chosen installation type, run one of the following:
-
-### Building a Java JAR
+Clone/download the contents of this repository. Open a command prompt and navigate to the byoc-tool folder which contains the downloaded repository.
 
 Run gradle task "shadowJar":
 - on Windows: `gradlew.bat shadowJar`
