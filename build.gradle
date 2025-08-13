@@ -42,7 +42,7 @@ dependencies {
 
     implementation platform('com.google.cloud:libraries-bom:26.26.0')
     implementation platform('io.grpc:grpc-bom:1.67.1')
-    compileOnly 'com.google.cloud:google-cloud-storage'
+    implementation 'com.google.cloud:google-cloud-storage'
 
     implementation "info.picocli:picocli:4.0.4"
     implementation "org.locationtech.jts:jts-core:1.16.1"
